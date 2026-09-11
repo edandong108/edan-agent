@@ -18,7 +18,8 @@ dataexchange_portal_agent/
 ├── specs/             迭代知识层
 │   ├── INDEX.md           规格索引（每卡一行+质量级别）
 │   ├── _templates/        retro 迭代卡 + requirements/design/tasks 三件套
-│   └── retro/             迭代卡（事后生成）+ .anchor.txt（双仓锚点）
+│   ├── NNN-功能名/        前向 spec（仅 agent 开发的迭代：三件套在此，开发前）
+│   └── retro/             迭代卡（交付后收口，所有迭代都有）+ .anchor.txt（双仓锚点）
 └── .cursor/           agent 执行层（clone 即生效）
     ├── rules/             spec-flow + 前后端规范执行版
     └── skills/picc-gitee-commit/  提交纪律
@@ -34,7 +35,7 @@ dataexchange_portal_agent/
 
 ## 日常节奏
 
-- **agent 开发新迭代**：走 `specs/_templates/` 三件套，无 spec 不开发
+- **agent 开发新迭代**：`specs/NNN-功能名/` 三件套（开发前，无 spec 不开发）→ 交付后验收结论回填对应 retro 卡
 - **每周五（或说"生成迭代卡"）**：对双仓 `git log <锚点>..HEAD` 生成 retro 迭代卡 → 更新 `specs/INDEX.md` → 更新 `.anchor.txt` → 输出知识债务清单
 - **接口变更**：业务仓提交 + 本仓 `docs/API-CONTRACT.md` 同迭代更新
 - **规范更新**：`相关规范/*.doc` 变 → 同步 `.cursor/rules/*.mdc` → `docs/STANDARDS.md` 记对齐日期
