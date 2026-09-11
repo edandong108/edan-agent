@@ -17,8 +17,8 @@ dataexchange_portal_agent/
 │   └── STANDARDS.md       规范导读（权威来源/差异点/对齐日期）
 ├── specs/             迭代知识层
 │   ├── INDEX.md           规格索引（每卡一行+质量级别）
-│   ├── _templates/        retro 迭代卡 + requirements/design/tasks 三件套
-│   ├── NNN-功能名/        前向 spec（仅 agent 开发的迭代：三件套在此，开发前）
+│   ├── _templates/        retro-card.md（迭代卡模板）
+│   ├── NNN-功能名/        前向 spec：需求/方案/测试 三层（复用核心文档语言，开发前备齐）
 │   └── retro/             迭代卡（交付后收口，所有迭代都有）+ .anchor.txt（双仓锚点）
 └── .cursor/           agent 执行层（clone 即生效）
     ├── rules/             spec-flow + 前后端规范执行版
@@ -35,7 +35,7 @@ dataexchange_portal_agent/
 
 ## 日常节奏
 
-- **agent 开发新迭代**：`specs/NNN-功能名/` 三件套（开发前，无 spec 不开发）→ 交付后验收结论回填对应 retro 卡
+- **agent 开发新迭代**：`specs/NNN-功能名/` 备好 需求/方案/测试 三层（合格标准见 `.cursor/rules/spec-flow.mdc`），批准后开发 → 交付后验收结论回填对应 retro 卡
 - **每周五（或说"生成迭代卡"）**：对双仓 `git log <锚点>..HEAD` 生成 retro 迭代卡 → 更新 `specs/INDEX.md` → 更新 `.anchor.txt` → 输出知识债务清单
 - **接口变更**：业务仓提交 + 本仓 `docs/API-CONTRACT.md` 同迭代更新
 - **规范更新**：`相关规范/*.doc` 变 → 同步 `.cursor/rules/*.mdc` → `docs/STANDARDS.md` 记对齐日期

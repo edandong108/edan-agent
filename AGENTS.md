@@ -31,7 +31,7 @@ curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
 ## 二、规矩（违反=返工）
 
 1. **接手任务先读**：本文件 → `specs/INDEX.md`（找相关迭代卡）→ 涉及接口必读 `docs/API-CONTRACT.md`
-2. **无 spec 不开发**（agent 开发的迭代）：requirements → design → tasks 三件套经用户批准后写代码；tasks.md 是执行契约，全部验收命令通过才算完成
+2. **无 spec 不开发**（agent 开发的迭代）：`specs/NNN-功能名/` 备好 需求/方案/测试 三层材料（合格标准见 `.cursor/rules/spec-flow.mdc`），经用户批准后写代码；实现完成 = 测试层的验收命令全部通过
 3. **改接口同步契约**：业务仓提交 + 本仓 `docs/API-CONTRACT.md` 同迭代更新
 4. **提交纪律**：作者李栋 `<lidong01@picc.com.cn>`；push 前必读 `.cursor/skills/picc-gitee-commit/SKILL.md`；Local*/mock/密钥/本地 properties 一律不推
 5. **知识纪律**：宁可留白不可污染——推断带置信度，业务背景不知道就标「待补」，不编造
@@ -68,4 +68,4 @@ curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
 | 环境怎么搭 | `docs/DEV-ENVIRONMENT.md` |
 | 规范执行版 | `.cursor/rules/*.mdc` + `docs/STANDARDS.md` |
 | 某次迭代改了什么 | `specs/INDEX.md` → `specs/retro/` |
-| 新功能开发流程 | `specs/_templates/` 三件套 |
+| 新功能开发流程 | `specs/NNN-功能名/` 三层 + `.cursor/rules/spec-flow.mdc` |
