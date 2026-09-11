@@ -18,7 +18,7 @@ dataexchange_portal_agent/
 ├── specs/             迭代知识层
 │   ├── INDEX.md           规格索引（每卡一行+质量级别）
 │   ├── _templates/        retro-card.md（迭代卡模板）
-│   ├── NNN-功能名/        前向 spec：需求/方案/测试 三层（复用核心文档语言，开发前备齐）
+│   ├── NNN-功能名/        功能材料三层：需求/方案/测试（前向 spec 开发前备齐；存量功能材料齐可回填）
 │   └── retro/             迭代卡（交付后收口，所有迭代都有）+ .anchor.txt（双仓锚点）
 └── .cursor/           agent 执行层（clone 即生效）
     ├── rules/             spec-flow + 前后端规范执行版

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>离线作业队列状态查询 — 技术实施方案</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root { --primary: #c41230; --blue: #1677ff; --text: #1a1a1a; --muted: #888; --border: #e8e8e8; --ok: #52c41a; --warn: #faad14; --err: #ff4d4f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: var(--text); background: #f0f2f5; line-height: 1.65; font-size: 14px; }
+    .page { max-width: 1120px; margin: 20px auto 48px; padding: 36px 40px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.08); border-radius: 4px; }
+    h1 { margin: 0 0 6px; font-size: 22px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; }
+    .meta { color: var(--muted); font-size: 12px; margin-bottom: 22px; }
+    h2 { font-size: 16px; margin: 30px 0 12px; padding-left: 10px; border-left: 4px solid var(--primary); }
+    h3 { font-size: 14px; margin: 18px 0 8px; color: #333; }
+    h4 { font-size: 13px; margin: 14px 0 6px; color: #555; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 16px; }
+    th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+    th { background: #fafafa; font-weight: 600; }
+    .conclusion { background: #e6f4ff; border-left: 4px solid var(--blue); padding: 12px 16px; margin: 16px 0; border-radius: 0 4px 4px 0; }
+    .warn { background: #fffbe6; border-left: 4px solid var(--warn); padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+    .ok-box { background: #f6ffed; border-left: 4px solid var(--ok); padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+    code { background: #f5f5f5; padding: 1px 5px; border-radius: 3px; font-size: 12px; word-break: break-all; }
+    pre { background: #1e1e1e; color: #d4d4d4; border-radius: 6px; padding: 14px 16px; font-size: 12px; overflow-x: auto; line-height: 1.5; margin: 10px 0; }
+    .mermaid-wrap { background: #fafafa; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 12px 0; overflow-x: auto; }
+    .toc li { margin: 4px 0; }
+    .toc a { color: var(--blue); text-decoration: none; }
+    .footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+    a { color: var(--blue); text-decoration: none; }
+    .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 3px; font-weight: 500; }
+    .tag-be { background: #e6f4ff; color: #0958d9; border: 1px solid #91caff; }
+    .tag-fe { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+    .tag-db { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
+    .tag-iam { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>离线作业队列状态查询 — 技术实施方案</h1>
+    <p class="meta">
+      数据交换中心 · SLA 保障第一阶段 · 2026-09-09 · 状态：<strong>已实现</strong> ·
+      关联：<a href="离线作业队列状态查询-评审一页纸.html">评审一页纸</a> ·
+      <a href="离线作业队列状态-前端原型.html">状态页原型</a> ·
+      <a href="离线作业队列分析-前端原型.html">分析页原型</a>
+    </p>
+
+    <div class="conclusion">
+      <strong>方案要点：</strong>新增只读「任务运维」页（双 Tab：队列状态快照 + 队列分析），数据来自 <code>schedule_queue</code> + <code>job_instance</code> + <code>job</code>。<strong>不新建表、不改调度、不参与排队、不加 mock</strong>。后端 <code>QueueStatus*</code> / <code>QueueAnalysis*</code> 两套只读接口；前端 <code>taskOperations</code> 壳页 + 子页组件化（StatCard / KpiCard / SliceChart）。
+    </div>
+
+    <ul class="toc" style="font-size:13px">
+      <li><a href="#bg">一、背景与目标</a></li>
+      <li><a href="#arch">二、整体架构</a></li>
+      <li><a href="#data">三、数据模型与口径</a></li>
+      <li><a href="#be">四、后端设计</a></li>
+      <li><a href="#fe">五、前端设计</a></li>
+      <li><a href="#change">六、改动清单</a></li>
+      <li><a href="#risk">七、风险与对策</a></li>
+      <li><a href="#test">八、测试要点</a></li>
+      <li><a href="#mile">九、里程碑</a></li>
+    </ul>
+
+    <h2 id="bg">一、背景与目标</h2>
+    <h3>1.1 背景</h3>
+    <p>SLA 保障第一阶段已实现队列调度模型（<code>entry.py</code> 提交、<code>schedule_queue</code> 排队、可配置最大并发 K、手动出队），但<strong>队列状态对运维不可见</strong>：积压、等待时长、僵尸实例、SLA 达标率均无页面呈现，运维只能翻执行日志逐条排查。</p>
+    <h3>1.2 目标</h3>
+    <table>
+      <tr><th style="width:160px">目标</th><th>说明</th></tr>
+      <tr><td>队列状态可见</td><td>当前/历史时刻的排队、执行、僵尸瞬时分布</td></tr>
+      <tr><td>SLA 可量化</td><td>按天 5 分钟切片，高优/普通达标率、排队深度、等待分位、吞吐、僵尸检出</td></tr>
+      <tr><td>事后可复盘</td><td>回看某天积压何时形成、谁拖后腿、入口/出口归因</td></tr>
+    </table>
+    <h3>1.3 非目标（一期不做）</h3>
+    <p>自动告警推送、自动重跑/杀僵尸（僵尸不联动动作）、导出功能（快照页与分析页均不做）、跨天对比、按表单独设置 SLA 基线（一期固定 30min，后续演进）、<code>sla_priority</code> 参与排序（一期仅展示）。</p>
+    <div class="ok-box"><strong>SLA 基线演进说明：</strong>原始 SLA 方案中每张表基于历史数据情况设定各自基线值。一期为简化实现统一固定 30min；后端聚合接口预留 <code>baseline</code> 入参（默认 30min），后续支持按表配置时只需扩展基线来源（如读 job 表的 SLA 基线字段或独立配置表），接口与前端无需大改。</div>
+
+    <h2 id="arch">二、整体架构</h2>
+    <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph 调度侧[调度侧 不改动]
+    EP[entry.py 提交/出队]
+  end
+  subgraph 元数据库[MYSQL 元数据库 底层老师已建表]
+    SQ[(schedule_queue append-only)]
+    JI[(job_instance 实例历史)]
+    J[(job 作业配置)]
+  end
+  subgraph 后端[data-exchange 新增只读层]
+    SQM[ScheduleQueueMapper 新增只读]
+    JIM[JobInstanceMapper 复用]
+    JM[JobMapper 复用]
+    QS[QueueStatusService 快照重建]
+    QA[QueueAnalysisService 切片聚合]
+    AC1[QueueStatusController]
+    AC2[QueueAnalysisController]
+  end
+  subgraph 前端[udp-portal 新增2页]
+    P1[队列状态页 快照3段]
+    P2[队列分析页 5分钟切片]
+  end
+  EP -->|写入| SQ
+  EP -->|创建更新| JI
+  SQ --> SQM --> QS --> AC1 --> P1
+  JI --> JIM --> QS
+  J --> JM --> QS
+  SQ --> SQM --> QA --> AC2 --> P2
+  JI --> JIM --> QA
+  J --> JM --> QA
+</pre>
+    </div>
+    <p style="font-size:12px;color:var(--muted)">关键：本功能<strong>只读</strong>，数据流单向（库 → 后端 → 前端），不回写调度侧。</p>
+
+    <h2 id="data">三、数据模型与口径</h2>
+    <h3>3.1 schedule_queue（底层老师已建表，本方案只读）</h3>
+    <p>依据 SLA 方案 7.5，<code>schedule_queue</code> 为 append-only 历史表，每条记录代表一次排队生命周期。需与底层老师确认字段，预期字段口径如下：</p>
+    <table>
+      <tr><th>字段</th><th>含义</th><th>本方案用途</th></tr>
+      <tr><td>id</td><td>自增主键</td><td>—</td></tr>
+      <tr><td>job_id</td><td>作业ID</td><td>JOIN job 取湖表名</td></tr>
+      <tr><td>sla_priority</td><td>优先级 0=普通 / 1=高优</td><td>展示标签（一期不参与排序）</td></tr>
+      <tr><td>submit_time</td><td>入队时间</td><td>排队等待时长起点、FIFO 排序键</td></tr>
+      <tr><td>finished_at</td><td>离队时间（提交/取消）</td><td>排队区间终点，NULL 表示仍在队</td></tr>
+      <tr><td>status</td><td>QUEUED / SUBMITTED / ...</td><td>区分排队中/已提交</td></tr>
+    </table>
+    <div class="warn"><strong>待确认：</strong>实际字段名与 <code>status</code> 枚举值需与底层老师对齐；若 <code>finished_at</code> 命名不同（如 <code>dequeue_time</code>），口径相应调整。</div>
+
+    <h3>3.2 job_instance（已存在，复用）</h3>
+    <p>现有 <code>JobInstance</code> 实体字段：<code>id, jobId, status(PENDING/RUNNING/SUCCESS/FAILED), heartBeatenAt, createdAt, updatedAt</code>。本方案复用，取 <code>createdAt</code>（实例创建）、<code>heartBeatenAt</code>（心跳）、<code>status</code>（实例状态）。</p>
+
+    <h3>3.3 job（已存在，复用）</h3>
+    <p>取湖表名：出湖取 <code>source_schema.source_table</code>，入湖取 <code>target_schema.target_table</code>（与台账页一致）。</p>
+
+    <h3>3.4 三态口径（快照重建）</h3>
+    <table>
+      <tr><th>状态</th><th>判定（快照时间 T）</th><th>数据来源</th></tr>
+      <tr><td>排队中</td><td>status=QUEUED 且 submit_time ≤ T 且 (finished_at IS NULL OR finished_at &gt; T)</td><td>schedule_queue</td></tr>
+      <tr><td>执行中</td><td>经队列提交（SQ status=SUBMITTED）且对应实例 created_at ≤ T 且未进终态</td><td>schedule_queue JOIN job_instance</td></tr>
+      <tr><td>僵尸</td><td>执行中且 T − heart_beaten_at &gt; 阈值（100s）</td><td>job_instance 心跳实时派生</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--muted)">去重：同一 jobId 跨集合只归一侧（执行中 &gt; 排队中 &gt; 僵尸）；集内按 jobId 去重取最新实例。</p>
+
+    <h2 id="be">四、后端设计</h2>
+    <h3>4.1 新增实体与 Mapper</h3>
+    <p>包路径遵循项目既有结构（<code>dao/entity</code>、<code>dao/secondary/mapper</code>，MYSQL 走 secondary 数据源）。</p>
+    <pre>// dao/entity/ScheduleQueue.java （新增，只读）
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class ScheduleQueue {
+    private Long id;
+    private Long jobId;
+    private Integer slaPriority;   // 0 普通 / 1 高优
+    private Timestamp submitTime;
+    private Timestamp finishedAt;
+    private String status;          // QUEUED / SUBMITTED / ...
+}</pre>
+    <pre>// dao/secondary/mapper/ScheduleQueueMapper.java （新增，注解式，与 JobInstanceMapper 风格一致）
+@Mapper
+public interface ScheduleQueueMapper {
+
+    // 快照：某时刻仍在队的排队记录
+    @Select("SELECT * FROM schedule_queue WHERE status='QUEUED' " +
+            "AND submit_time &lt;= #{t} AND (finished_at IS NULL OR finished_at &gt; #{t}) " +
+            "ORDER BY submit_time ASC")
+    List&lt;ScheduleQueue&gt; listQueuedAt(Timestamp t);
+
+    // 快照：某时刻已提交未终态的记录（用于关联实例）
+    @Select("SELECT * FROM schedule_queue WHERE status='SUBMITTED' " +
+            "AND submit_time &lt;= #{t} AND (finished_at IS NULL OR finished_at &gt; #{t})")
+    List&lt;ScheduleQueue&gt; listSubmittedAt(Timestamp t);
+
+    // 分析：某天全部记录（用于切片聚合）
+    @Select("SELECT * FROM schedule_queue WHERE submit_time &gt;= #{dayStart} " +
+            "AND submit_time &lt; #{dayEnd}")
+    List&lt;ScheduleQueue&gt; listByDay(Timestamp dayStart, Timestamp dayEnd);
+}</pre>
+
+    <h3>4.2 QueueStatusService（快照重建）</h3>
+    <p>核心方法：<code>QueueStatusSnapshotDto snapshot(Timestamp t, boolean now)</code>。</p>
+    <ol>
+      <li>取 <code>listQueuedAt(t)</code> → 排队中明细</li>
+      <li>取 <code>listSubmittedAt(t)</code> → 关联 <code>JobInstanceMapper</code>（按 jobId 取 created_at ≤ t 的最新实例）→ 执行中</li>
+      <li>执行中按 <code>t - heartBeatenAt &gt; 100s</code> 派生僵尸，从执行中拆出</li>
+      <li>JOIN <code>JobMapper</code> 补湖表名、<code>sla_priority</code> 标签</li>
+      <li>跨集合去重（执行中 &gt; 排队中 &gt; 僵尸），集内按 jobId 取最新实例</li>
+      <li>组装三段统计卡 + 明细表返回</li>
+    </ol>
+    <p>当前时刻：<code>t = 数据库 NOW()</code>（避免应用时钟漂移）；历史时刻：入参校验 <code>t &lt;= NOW()</code>，未来时间报错。</p>
+
+    <h3>4.3 QueueAnalysisService（切片聚合）</h3>
+    <p>核心方法：<code>QueueAnalysisDto analyze(String day, String priority, String slice, Integer baseline)</code>，slice=5min（288 片）/1hour（24 片），baseline 默认 30（分钟，一期固定，预留按表配置扩展）。</p>
+    <ol>
+      <li>取 <code>ScheduleQueueMapper.listByDay</code> + <code>JobInstanceMapper</code> 当日实例</li>
+      <li>按切片边界聚合：每切片末排队深度、执行并发、入队/提交/完成数</li>
+      <li>等待时长分位：切片内离队作业 (finished_at − submit_time) 的 P50/P90/P99</li>
+      <li>SLA 达标率：高优/普通分别统计超 baseline 占比</li>
+      <li>僵尸检出：每切片内心跳停摆超阈值的实例数（只展示，不联动动作）</li>
+      <li>TopN：当日等待时长最久的作业（按优先级可筛，Top 10 可分页）</li>
+    </ol>
+    <div class="ok-box"><strong>性能策略：</strong>288 片数据量小，建议<strong>后端一次性聚合返回</strong>，前端只渲染；避免前端逐切片请求。当日数据量大时按 <code>submit_time</code> 加索引（底层老师建表时确认）。</div>
+
+    <h3>4.4 API 接口</h3>
+    <p>遵循项目规范：<code>api/</code> 包、<code>ApiResponse</code> 返回体。本期只读接口<strong>未加 @PermissionCheck</strong>，由 IAM 菜单控制可见性。</p>
+    <table>
+      <tr><th>接口</th><th>方法</th><th>入参</th><th>出参</th><th>权限</th></tr>
+      <tr><td>/data-exchange/portal/queue-status/snapshot</td><td>GET</td><td>mode(now/history), t(历史时刻)</td><td>QueueStatusSnapshotDto</td><td>IAM 菜单</td></tr>
+      <tr><td>/data-exchange/portal/queue-analysis/analyze</td><td>GET</td><td>day, priority, slice, baseline(默认30)</td><td>QueueAnalysisDto</td><td>IAM 菜单</td></tr>
+    </table>
+    <pre>// QueueStatusController / QueueAnalysisController
+// 无 @PermissionCheck；返回 ApiResponse.success(service.xxx(...))</pre>
+
+    <h2 id="fe">五、前端设计</h2>
+    <h3>5.1 目录与路由（最终实现）</h3>
+    <pre>udp-portal/src/views/dataExchange/
+├── taskOperations/           # IAM 菜单入口（双 Tab 壳页）
+│   └── index.vue
+├── queueStatus/              # Tab① 队列状态
+│   ├── index.vue
+│   └── components/StatCard.vue
+├── queueAnalysis/            # Tab② 队列分析
+│   ├── index.vue
+│   └── components/KpiCard.vue, SliceChart.vue
+udp-portal/src/api/
+├── queueStatus.ts
+└── queueAnalysis.ts</pre>
+    <p>IAM 单菜单：<strong>任务运维</strong> → <code>/dataExchange/taskOperations/index</code>，不配权限码。路由由 <code>import.meta.glob</code> 动态加载，不改 routes.ts。</p>
+
+    <h3>5.2 队列状态 Tab（queueStatus/index.vue）</h3>
+    <table>
+      <tr><th style="width:160px">元素</th><th>实现</th></tr>
+      <tr><td>时间切换</td><td>a-segmented + a-date-picker（历史到分钟）</td></tr>
+      <tr><td>范围说明</td><td>筛选栏右侧、快照时间前（非顶部 alert）</td></tr>
+      <tr><td>自动刷新</td><td>当前态 a-checkbox 10s，默认关</td></tr>
+      <tr><td>统计卡</td><td><code>StatCard</code> × 3，label 旁 ⓘ 口径提示</td></tr>
+      <tr><td>明细表</td><td>a-table × 3，table-layout fixed + 百分比列宽；jobId/湖表名居中</td></tr>
+      <tr><td>指标提示</td><td>全部列头 ⓘ（含湖表名、优先级、时间、时长）</td></tr>
+    </table>
+
+    <h3>5.3 队列分析 Tab（queueAnalysis/index.vue）</h3>
+    <table>
+      <tr><th style="width:160px">元素</th><th>实现</th></tr>
+      <tr><td>筛选条</td><td>日期 + 优先级 + 切片粒度(5min/1h) + SLA基线(min) + 60s刷新</td></tr>
+      <tr><td>KPI 卡</td><td><code>KpiCard</code> × 5，tip ⓘ + sub 数值拆解</td></tr>
+      <tr><td>图表</td><td><code>SliceChart</code> × 4，复用 BaseCharts；xAxis type=time，yAxis minInterval=1</td></tr>
+      <tr><td>联动/参考线</td><td><strong>一期未做</strong></td></tr>
+      <tr><td>按小时表</td><td>24 行，表头+卡片标题 ⓘ；计数累加/峰值取 max</td></tr>
+      <tr><td>TopN</td><td>Top 10 分页，等待时长降序</td></tr>
+    </table>
+
+    <h3>5.4 前端 API 封装</h3>
+    <pre>// src/api/queueStatus.ts、queueAnalysis.ts
+// 使用 @/utils/axiosInstance，serverType 走 data-exchange 网关
+queueStatusApi.snapshot({ mode, t })
+queueAnalysisApi.analyze({ day, priority, slice, baseline })</pre>
+
+    <h2 id="change">六、改动清单</h2>
+    <table>
+      <tr><th style="width:90px">类型</th><th>文件/项</th><th>说明</th></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>dao/secondary/mapper/QueueStatusMapper.java</td><td>快照三态 SQL（PDF 7.5）</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>dao/secondary/mapper/QueueAnalysisMapper.java</td><td>按天加载 sq + ji</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>service/QueueStatusService.java + impl</td><td>新增：快照重建</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>service/QueueAnalysisService.java + impl</td><td>新增：切片聚合</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>api/QueueStatusController.java</td><td>新增：snapshot 接口</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>api/QueueAnalysisController.java</td><td>新增：analyze 接口</td></tr>
+      <tr><td><span class="tag tag-be">后端</span></td><td>dto/QueueStatusSnapshotDto 等</td><td>新增出参 DTO</td></tr>
+      <tr><td><span class="tag tag-fe">前端</span></td><td>taskOperations/index.vue</td><td>壳页双 Tab + 内容区滚动</td></tr>
+      <tr><td><span class="tag tag-fe">前端</span></td><td>queueStatus/、queueAnalysis/</td><td>子页 + StatCard/KpiCard/SliceChart</td></tr>
+      <tr><td><span class="tag tag-fe">前端</span></td><td>api/queueStatus.ts、queueAnalysis.ts</td><td>API 封装</td></tr>
+      <tr><td><span class="tag tag-iam">IAM</span></td><td>单菜单「任务运维」</td><td>不配权限码</td></tr>
+      <tr><td><span class="tag tag-db">DB</span></td><td>schedule_queue</td><td><strong>无变更</strong>（底层老师已建表）；建议确认 submit_time 索引</td></tr>
+      <tr><td><span class="tag tag-db">DB</span></td><td>job_instance、job</td><td>无变更（复用）</td></tr>
+    </table>
+    <div class="ok-box"><strong>无新增中间件、无新增 Nacos 配置项。</strong>外部依赖仅 MYSQL 元数据库（已有）。</div>
+
+    <h2 id="risk">七、风险与对策</h2>
+    <table>
+      <tr><th style="width:200px">风险</th><th>对策</th></tr>
+      <tr><td>schedule_queue 非 append-only / 字段语义与预期不符</td><td>开发前与底层老师逐字段对齐，确认 status 枚举、finished_at 语义、是否真 append-only</td></tr>
+      <tr><td>历史快照重建口径偏差</td><td>以方案 7.5 区间覆盖法为准，联调时用已知事件回放校验</td></tr>
+      <tr><td>5 分钟聚合当日查询慢</td><td>后端一次性聚合；确认 submit_time 索引；必要时按天缓存</td></tr>
+      <tr><td>僵尸"已自愈"展示缺数据</td><td>一期不展示自愈，只展示僵尸检出数</td></tr>
+      <tr><td>10s 自动刷新压元数据库</td><td>默认关闭，用户手动开；评估后可调 15-30s</td></tr>
+      <tr><td>时钟漂移</td><td>当前态以数据库 NOW() 为准，不用应用本地时间</td></tr>
+    </table>
+
+    <h2 id="test">八、测试要点</h2>
+    <table>
+      <tr><th style="width:160px">场景</th><th>验证点</th></tr>
+      <tr><td>当前态快照</td><td>三段数量与明细一致；僵尸心跳阈值生效；10s 刷新数据更新</td></tr>
+      <tr><td>历史态快照</td><td>选未来时间报错；区间覆盖法重建与已知事件一致</td></tr>
+      <tr><td>跨集合去重</td><td>同一 jobId 只归一侧（执行中&gt;排队中&gt;僵尸）</td></tr>
+      <tr><td>分析 KPI</td><td>高优/普通达标率口径正确；P90 与明细对得上</td></tr>
+      <tr><td>TopN</td><td>等待最久排序；Top 10 分页；优先级筛选（sq 侧）</td></tr>
+      <tr><td>指标提示</td><td>各 KPI/列头/图表标题 ⓘ 与口径一致</td></tr>
+      <tr><td>范围说明</td><td>非队列提交的作业不在快照中，页面文案提示</td></tr>
+    </table>
+
+    <h2 id="mile">九、里程碑</h2>
+    <table>
+      <tr><th style="width:140px">阶段</th><th>产出</th><th>周期</th></tr>
+      <tr><td>开发</td><td>前后端 + 组件化 + 测试库联调</td><td>✅ 已完成</td></tr>
+      <tr><td>测试验收</td><td>见测试用例 + 上线配置文档第四节</td><td>进行中</td></tr>
+      <tr><td>上线</td><td>IAM 配单菜单后发布</td><td>待排期</td></tr>
+    </table>
+
+    <div class="warn">
+      <strong>上线前确认：</strong>① IAM 配「任务运维」单菜单；② 测试库联调对账（见 <a href="离线作业队列状态查询-上线配置与联调对账.md">上线配置与联调对账</a>）；③ 已知待优化项（历史 snapshotTime、优先级过滤贯通）评估是否首版修。
+    </div>
+
+    <div class="footer">
+      编制：数据应用小组 · 2026-09-08 · 本方案为技术实施依据，评审决策见
+      <a href="离线作业队列状态查询-评审一页纸.html">评审一页纸</a>
+    </div>
+  </div>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+</html>

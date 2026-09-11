@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>离线作业队列分析 — 前端原型</title>
+<style>
+:root{--primary:#c41230;--blue:#1677ff;--text:#1a1a1a;--muted:#888;--border:#e8e8e8;--ok:#52c41a;--warn:#faad14;--err:#ff4d4f;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Microsoft YaHei",sans-serif;color:var(--text);background:#eef1f5;line-height:1.55;font-size:14px;}
+.page{max-width:1200px;margin:20px auto 48px;padding:24px 28px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.08);border-radius:4px;}
+h1{margin:0 0 4px;font-size:20px;border-bottom:3px solid var(--primary);padding-bottom:10px;}
+.meta{color:var(--muted);font-size:12px;margin-bottom:18px;}
+h2{font-size:15px;margin:22px 0 10px;padding-left:8px;border-left:4px solid var(--primary);}
+h3{font-size:14px;margin:14px 0 8px;color:#333;}
+p,li{font-size:13px;}
+table.info{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
+table.info th,table.info td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;}
+table.info th{background:#fafafa;}
+.note{background:#fffbe6;border-left:3px solid var(--warn);padding:9px 12px;font-size:13px;margin:10px 0;}
+.blue-note{background:#e6f4ff;border-left:3px solid var(--blue);padding:9px 12px;font-size:13px;margin:10px 0;}
+.draft-tag{display:inline-block;background:#fff1f0;color:var(--primary);border:1px solid #ffccc7;font-size:11px;padding:1px 8px;border-radius:3px;margin-left:8px;vertical-align:middle;}
+.pw{border:1px solid var(--border);border-radius:6px;background:#fafafa;margin:14px 0;overflow:hidden;}
+.ph{background:#fff;padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.pt{font-size:17px;font-weight:600;}
+.ps{font-size:12px;color:var(--muted);margin-top:4px;}
+.tb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.btn{padding:5px 14px;border-radius:4px;font-size:13px;border:1px solid #d9d9d9;background:#fff;}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue);}
+.seg{display:inline-flex;border:1px solid #d9d9d9;border-radius:5px;overflow:hidden;}
+.seg button{border:none;background:transparent;padding:5px 12px;font-size:12px;color:var(--muted);}
+.seg button.on{background:var(--blue);color:#fff;font-weight:600;}
+.inp{border:1px solid #d9d9d9;border-radius:4px;padding:5px 10px;font-size:13px;background:#fff;}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px 20px;background:#fff;}
+.kpi{border:1px solid var(--border);border-radius:6px;padding:12px 14px;position:relative;overflow:hidden;}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
+.k1::before{background:var(--ok);}.k2::before{background:var(--warn);}.k3::before{background:var(--blue);}.k4::before{background:var(--err);}.k5::before{background:var(--primary);}
+.kl{font-size:11px;color:var(--muted);}
+.kn{font-size:24px;font-weight:700;margin-top:3px;}
+.kh{font-size:11px;color:var(--muted);margin-top:2px;}
+.k1 .kn{color:var(--ok);}.k2 .kn{color:var(--warn);}.k3 .kn{color:var(--blue);}.k4 .kn{color:var(--err);}.k5 .kn{color:var(--primary);}
+.charts{padding:0 20px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.cc{border:1px solid var(--border);border-radius:6px;background:#fff;overflow:hidden;}
+.cf{grid-column:1/-1;}
+.ch{padding:10px 14px;background:#fafafa;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;display:flex;justify-content:space-between;}
+.cb{padding:18px;height:180px;background:linear-gradient(180deg,#fff 0%,#f9fbff 100%);border:1px dashed #d9e8ff;border-radius:4px;margin:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--muted);font-size:12px;}
+.cb b{color:#333;font-size:13px;margin-bottom:6px;display:block;}
+table.dt{width:100%;border-collapse:collapse;font-size:12px;}
+table.dt th,table.dt td{border-bottom:1px solid #f0f0f0;padding:7px 10px;text-align:left;}
+table.dt th{background:#fafafa;font-weight:600;color:#555;}
+.tag{font-size:11px;padding:1px 7px;border-radius:3px;}
+.tag-high{background:#fff1f0;color:var(--primary);border:1px solid #ffccc7;}
+.tag-normal{background:#f5f5f5;color:#666;border:1px solid #e8e8e8;}
+.tag-ok{background:#f6ffed;color:#389e0d;border:1px solid #b7eb8f;}
+.tag-breach{background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;}
+.mono{font-family:Consolas,monospace;}
+@media(max-width:900px){.charts{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>离线作业队列分析 — 前端原型 <span class="draft-tag">产品草稿 · 未开发</span></h1>
+<p class="meta">数据交换中心 · 队列分析页（与"队列状态"快照页并列）· SLA 保障第一阶段 · 2026-09-08</p>
+
+<div class="blue-note">
+<strong>定位：</strong>按天回看队列调度健康度，5 分钟切片（一天 288 片）。回答：<strong>积压何时形成、等多久、谁在拖后腿、SLA 是否达标</strong>。数据来自 <code>schedule_queue</code> + <code>job_instance</code> 聚合，只读分析。
+</div>
+
+<h2>一、页面原型</h2>
+<div class="pw">
+<div class="ph">
+<div><div class="pt">离线作业队列分析</div><div class="ps">5 分钟切片 · 按天分析 · SLA：超基线 30min 占比 高优 0% / 普通 &lt;5%</div></div>
+<div class="tb">
+<span style="font-size:12px;color:#555">日期</span><input class="inp" value="2026-09-08" style="width:120px"/>
+<span style="font-size:12px;color:#555">优先级</span><select class="inp"><option>全部</option><option>高优</option><option>普通</option></select>
+<div class="seg"><button class="on">5分钟</button><button>1小时</button></div>
+<button class="btn btn-blue">查询</button><button class="btn">导出</button>
+</div>
+</div>
+
+<div class="kpi-row">
+<div class="kpi k1"><div class="kl">高优 SLA 达标率</div><div class="kn">100%</div><div class="kh">超基线 0/12 · 目标 0%</div></div>
+<div class="kpi k2"><div class="kl">普通 SLA 达标率</div><div class="kn">96.2%</div><div class="kh">超基线 8/210 · 目标 &lt;5%</div></div>
+<div class="kpi k3"><div class="kl">最大排队深度</div><div class="kn">47</div><div class="kh">14:30 · K=10</div></div>
+<div class="kpi k4"><div class="kl">最大等待时长</div><div class="kn">38min</div><div class="kh">14:35 · jobId=1035</div></div>
+<div class="kpi k5"><div class="kl">僵尸检出</div><div class="kn">3</div><div class="kh">当日累计 · 已自愈 1</div></div>
+</div>
+
+<div class="charts">
+<div class="cc cf">
+<div class="ch"><span>① 队列深度 vs 执行并发（5 分钟切片 · 288 点）</span><span style="font-weight:normal;font-size:11px;color:var(--muted)">双轴折线 · 主轴排队数 · 副轴执行数</span></div>
+<div id="chart1" style="height:240px;margin:14px"></div>
+</div>
+<div class="cc">
+<div class="ch"><span>② 等待时长分位（P50/P90/P99）</span></div>
+<div id="chart2" style="height:200px;margin:14px"></div>
+</div>
+<div class="cc">
+<div class="ch"><span>③ 吞吐：入队 / 提交 / 完成</span></div>
+<div id="chart3" style="height:200px;margin:14px"></div>
+</div>
+<div class="cc">
+<div class="ch"><span>④ 僵尸检出（每切片）</span></div>
+<div id="chart4" style="height:200px;margin:14px"></div>
+</div>
+</div>
+</div>
+
+    <h2>二、按小时聚合表（24 行）</h2>
+    <div class="pw" style="background:#fff">
+      <table class="dt">
+        <thead><tr><th>小时</th><th>入队</th><th>提交</th><th>完成</th><th>峰值排队</th><th>峰值执行</th><th>P50等待</th><th>P90等待</th><th>超基线数</th><th>僵尸</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">00:00</td><td>12</td><td>10</td><td>9</td><td>3</td><td>10</td><td>2min</td><td>6min</td><td><span class="tag tag-ok">0</span></td><td>0</td></tr>
+          <tr><td class="mono">01:00</td><td>8</td><td>8</td><td>8</td><td>1</td><td>8</td><td>1min</td><td>3min</td><td><span class="tag tag-ok">0</span></td><td>0</td></tr>
+          <tr style="background:#fff7f7"><td class="mono">14:00</td><td>58</td><td>32</td><td>28</td><td>47</td><td>10</td><td>14min</td><td>32min</td><td><span class="tag tag-breach">6</span></td><td>1</td></tr>
+          <tr style="background:#fff7f7"><td class="mono">15:00</td><td>42</td><td>38</td><td>35</td><td>39</td><td>10</td><td>11min</td><td>28min</td><td><span class="tag tag-breach">2</span></td><td>2</td></tr>
+          <tr><td class="mono">…</td><td colspan="9" style="color:var(--muted)">其余小时省略</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>三、TopN 积压作业（等待最久）</h2>
+    <div class="pw" style="background:#fff">
+      <table class="dt">
+        <thead><tr><th>排名</th><th>jobId</th><th>湖表名</th><th>优先级</th><th>入队时间</th><th>提交时间</th><th>等待时长</th><th>是否超基线</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="mono">1035</td><td>dws.fact_claim</td><td><span class="tag tag-normal">普通</span></td><td class="mono">14:02:15</td><td class="mono">14:40:30</td><td><strong style="color:var(--err)">38min</strong></td><td><span class="tag tag-breach">超基线</span></td></tr>
+          <tr><td>2</td><td class="mono">1012</td><td>dws.dim_policy</td><td><span class="tag tag-high">高优</span></td><td class="mono">14:05:40</td><td class="mono">14:33:12</td><td>27min</td><td><span class="tag tag-ok">未超</span></td></tr>
+          <tr><td>3</td><td class="mono">1077</td><td>ods.customer</td><td><span class="tag tag-normal">普通</span></td><td class="mono">14:10:15</td><td class="mono">14:35:20</td><td>25min</td><td><span class="tag tag-ok">未超</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>四、指标口径（数据分析视角）</h2>
+    <table class="info">
+      <tr><th style="width:120px">指标</th><th>口径</th><th>业务意义</th></tr>
+      <tr><td>排队深度</td><td>每切片末 QUEUED 记录数</td><td>积压规模，>20 预警</td></tr>
+      <tr><td>执行并发</td><td>每切片末 SUBMITTED 且未结束实例数</td><td>是否触顶 K，出口是否打满</td></tr>
+      <tr><td>入队数</td><td>切片内新增 QUEUED 记录数</td><td>入口流量</td></tr>
+      <tr><td>提交数</td><td>切片内 QUEUED→SUBMITTED 的记录数</td><td>调度出口</td></tr>
+      <tr><td>完成数</td><td>切片内 job_instance 进入终态数</td><td>实际产能</td></tr>
+      <tr><td>等待时长 P50/P90/P99</td><td>切片内离队作业的 (finished_at − submit_time) 分位</td><td>SLA 核心，P90>30min 即破防</td></tr>
+      <tr><td>超基线数</td><td>等待时长 &gt; 30min 的作业数（按优先级分计）</td><td>SLA 达标率分子</td></tr>
+      <tr><td>僵尸检出</td><td>切片内心跳停摆超阈值的实例数</td><td>运维健康度</td></tr>
+    </table>
+
+    <h2>五、分析场景（运维怎么用这页）</h2>
+    <table class="info">
+      <tr><th style="width:140px">场景</th><th>看什么</th><th>判断</th></tr>
+      <tr><td>SLA 是否达标</td><td>KPI 卡 ① ② + 图② P90 线</td><td>高优 100% / 普通 &lt;95% 即告警</td></tr>
+      <tr><td>积压定位</td><td>图① 阴影区 + 图③ 入队>完成</td><td>入口暴增还是出口堵塞</td></tr>
+      <tr><td>出口瓶颈</td><td>图① 执行并发触顶 K 时长 + 完成数</td><td>触顶久且完成低=K 值偏小</td></tr>
+      <tr><td>僵尸归因</td><td>图④ + 按小时表僵尸列</td><td>集中时段=源端/集群异常窗口</td></tr>
+      <tr><td>谁在拖后腿</td><td>TopN 表</td><td>反复上榜的 job 需优化或调优先级</td></tr>
+    </table>
+
+    <h2>六、交互要点</h2>
+    <table class="info">
+      <tr><th style="width:120px">要点</th><th>说明</th></tr>
+      <tr><td>切片粒度</td><td>5 分钟（288 片）/ 1 小时（24 片）可切换；5 分钟看毛刺，1 小时看趋势</td></tr>
+      <tr><td>优先级筛选</td><td>全部 / 高优 / 普通，KPI 与图表联动</td></tr>
+      <tr><td>图① 联动</td><td>点击图① 某切片，图②③④ 联动到该切片附近窗口</td></tr>
+      <tr><td>基线参考线</td><td>图② 固定 30min 红虚线；图① 固定 K 线绿虚线</td></tr>
+      <tr><td>导出</td><td>导出当日切片明细 CSV（运维留存 / 向上汇报）</td></tr>
+      <tr><td>数据延迟</td><td>分析页基于历史表，当日数据有切片级延迟（非实时，区别于快照页）</td></tr>
+    </table>
+
+    <h2>七、与快照页的关系</h2>
+    <table class="info">
+      <tr><th>页面</th><th>问题</th><th>粒度</th><th>时效</th></tr>
+      <tr><td>队列状态（快照）</td><td>现在/某时刻排了多少、跑多少、僵尸几个</td><td>瞬时点</td><td>实时</td></tr>
+      <tr><td><strong>队列分析（本页）</strong></td><td><strong>一天里积压何时发生、等多久、谁拖后腿、SLA 达标率</strong></td><td><strong>5 分钟切片</strong></td><td><strong>当日延迟</strong></td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--muted)">两页并列挂在"数据交换"或"SLA 运维"分组下，快照页看"当下"，分析页看"趋势与达标"。</p>
+
+    <h2>八、待确认</h2>
+    <ol style="font-size:13px;padding-left:20px">
+      <li>5 分钟切片聚合在后端做还是前端做？建议后端预聚合（288 点数据量小，减前端压力）。</li>
+      <li>分析页是否需要跨天对比（如本周 vs 上周同日）？一期可不做。</li>
+      <li>SLA 基线 30min 是否要做成可配置（按作业类型/优先级不同基线）？一期建议固定 30min。</li>
+      <li>僵尸"已自愈"是否要在页面上展示？需后端记录自愈事件。</li>
+      <li>TopN 取 Top 几？建议 10，可分页。</li>
+    </ol>
+
+    <div class="note">
+      <strong>不改现有代码：</strong>本原型为独立 HTML 草稿，仅用于评审交互。确认后再排后端聚合接口与前端页面开发。
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+// 生成一天 288 个 5 分钟切片的 x 轴标签
+const xs = [];
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 5) {
+    xs.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
+  }
+}
+// 样例数据生成器：在 14:00~15:30 制造积压高峰
+function genQueueDepth() {
+  return xs.map((_, i) => {
+    const t = i / 287;
+    // 基础低负载 + 14:30 前后高峰
+    const peak = Math.exp(-Math.pow((i - 174) / 14, 2)) * 45; // 14:30 = slice 174
+    const base = 3 + Math.sin(i / 20) * 2;
+    return Math.round(base + peak + (Math.random() * 3));
+  });
+}
+function genExecConc() {
+  return xs.map((_, i) => {
+    const peak = Math.exp(-Math.pow((i - 174) / 18, 2));
+    return Math.min(10, Math.round(4 + peak * 6 + Math.random()));
+  });
+}
+function genWaitP(p) {
+  // p: 0.5/0.9/0.99
+  const factor = p === 0.5 ? 1 : (p === 0.9 ? 2.2 : 3.4);
+  return xs.map((_, i) => {
+    const peak = Math.exp(-Math.pow((i - 174) / 16, 2));
+    return Math.round((2 + peak * 12 * factor + Math.random() * 2) * 10) / 10;
+  });
+}
+function genThroughput() {
+  const enq = [], sub = [], done = [];
+  xs.forEach((_, i) => {
+    const peak = Math.exp(-Math.pow((i - 174) / 14, 2));
+    enq.push(Math.round(2 + peak * 12 + Math.random() * 3));
+    sub.push(Math.round(2 + peak * 8 + Math.random() * 2));
+    done.push(Math.round(2 + peak * 7 + Math.random() * 2));
+  });
+  return { enq, sub, done };
+}
+function genZombie() {
+  return xs.map((_, i) => {
+    const peak = Math.exp(-Math.pow((i - 176) / 8, 2));
+    return peak > 0.3 ? Math.round(peak * 3 + Math.random()) : 0;
+  });
+}
+
+// 图① 队列深度 vs 执行并发
+echarts.init(document.getElementById('chart1')).setOption({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['排队深度', '执行并发'], top: 0 },
+  grid: { left: 50, right: 50, top: 30, bottom: 30 },
+  xAxis: { type: 'category', data: xs, axisLabel: { interval: 35 } },
+  yAxis: [
+    { type: 'value', name: '排队数', max: 60 },
+    { type: 'value', name: '执行数', max: 12, splitLine: { show: false } }
+  ],
+  series: [
+    { name: '排队深度', type: 'line', smooth: true, data: genQueueDepth(),
+      areaStyle: { opacity: 0.15 }, markLine: { silent: true, data: [{ yAxis: 20, lineStyle: { color: '#faad14', type: 'dashed' }, label: { formatter: '积压线20' } }] } },
+    { name: '执行并发', type: 'line', yAxisIndex: 1, smooth: true, data: genExecConc(),
+      itemStyle: { color: '#52c41a' }, lineStyle: { color: '#52c41a' },
+      markLine: { silent: true, symbol: 'none', data: [{ yAxis: 10, yAxisIndex: 1, lineStyle: { color: '#52c41a', type: 'dotted' }, label: { formatter: 'K=10' } }] } }
+  ]
+});
+
+// 图② 等待时长分位
+echarts.init(document.getElementById('chart2')).setOption({
+  tooltip: { trigger: 'axis', valueFormatter: v => v + 'min' },
+  legend: { data: ['P50', 'P90', 'P99'], top: 0 },
+  grid: { left: 50, right: 30, top: 30, bottom: 30 },
+  xAxis: { type: 'category', data: xs, axisLabel: { interval: 35 } },
+  yAxis: { type: 'value', name: '等待(min)', max: 50 },
+  series: [
+    { name: 'P50', type: 'line', smooth: true, data: genWaitP(0.5), itemStyle: { color: '#1677ff' } },
+    { name: 'P90', type: 'line', smooth: true, data: genWaitP(0.9), itemStyle: { color: '#faad14' } },
+    { name: 'P99', type: 'line', smooth: true, data: genWaitP(0.99), itemStyle: { color: '#ff4d4f' },
+      markLine: { silent: true, symbol: 'none', data: [{ yAxis: 30, lineStyle: { color: '#ff4d4f', type: 'dashed' }, label: { formatter: '基线30min' } }] } }
+  ]
+});
+
+// 图③ 吞吐
+const tp = genThroughput();
+echarts.init(document.getElementById('chart3')).setOption({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['入队', '提交', '完成'], top: 0 },
+  grid: { left: 45, right: 20, top: 30, bottom: 30 },
+  xAxis: { type: 'category', data: xs, axisLabel: { interval: 35 } },
+  yAxis: { type: 'value', name: '作业数' },
+  series: [
+    { name: '入队', type: 'bar', stack: 't', data: tp.enq, itemStyle: { color: '#1677ff' } },
+    { name: '提交', type: 'bar', stack: 't', data: tp.sub, itemStyle: { color: '#52c41a' } },
+    { name: '完成', type: 'bar', stack: 't', data: tp.done, itemStyle: { color: '#faad14' } }
+  ]
+});
+
+// 图④ 僵尸检出
+echarts.init(document.getElementById('chart4')).setOption({
+  tooltip: { trigger: 'axis' },
+  grid: { left: 45, right: 20, top: 20, bottom: 30 },
+  xAxis: { type: 'category', data: xs, axisLabel: { interval: 35 } },
+  yAxis: { type: 'value', name: '僵尸数' },
+  series: [
+    { name: '僵尸', type: 'bar', data: genZombie(), itemStyle: { color: '#ff4d4f' } }
+  ]
+});
+</script>
+</body>
+</html>

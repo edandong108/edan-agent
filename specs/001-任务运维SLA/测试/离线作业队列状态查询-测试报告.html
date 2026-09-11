@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>离线作业队列状态查询 — 全量测试报告</title>
+<style>
+:root{--primary:#c41230;--blue:#1677ff;--text:#1a1a1a;--muted:#888;--border:#e8e8e8;--ok:#52c41a;--err:#ff4d4f}
+body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--text);background:#f0f2f5;font-size:14px;line-height:1.55}
+.page{max-width:1200px;margin:20px auto 40px;padding:32px 36px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.08);border-radius:4px}
+h1{margin:0 0 6px;font-size:20px;border-bottom:3px solid var(--primary);padding-bottom:10px}
+h2{font-size:15px;margin:24px 0 10px;padding-left:8px;border-left:4px solid var(--primary)}
+.meta{color:var(--muted);font-size:12px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 14px}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:#fafafa}
+.conclusion{background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;padding:14px 18px;margin:14px 0 20px}
+.conclusion.fail{background:#fff2f0;border-color:#ffccc7}
+.note{background:#e6f4ff;border-left:3px solid var(--blue);padding:8px 12px;font-size:13px;margin:10px 0}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:3px}
+.tag-pass{background:#f6ffed;color:#389e0d;border:1px solid #b7eb8f}
+.tag-fail{background:#fff2f0;color:var(--err);border:1px solid #ffccc7}
+.tag-skip{background:#f5f5f5;color:#666;border:1px solid #d9d9d9}
+.tag-warn{background:#fffbe6;color:#d48806;border:1px solid #ffe58f}
+.tag-na{background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 20px}
+.card{border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;background:#fafafa}
+.card strong{display:block;font-size:24px}
+.card span{font-size:12px;color:var(--muted)}
+code{background:#f5f5f5;padding:1px 4px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>离线作业队列状态查询 — 全量测试报告</h1>
+<p class="meta">
+项目：数据交换中心 · 任务运维（队列状态 + 队列分析）<br/>
+环境：后端 <code>8088</code> local-testdb · 前端 <code>8081</code><br/>
+报告日期：2026-09-09 · 用例：<a href="离线作业队列状态查询-测试用例.md">测试用例全集</a><br/>
+执行：<code>run-queue-full-tests.ps1</code> + Cursor 内置浏览器 UI 走查<br/>
+<strong>本文件为唯一汇总测试报告</strong> · 数据：<code>queue-full-test-results.json</code>
+</p>
+<div class="conclusion">
+<strong>结论：已执行用例全部通过</strong>
+<p style="margin:8px 0 0">登记 <strong>79</strong> 条。已执行 <strong>57</strong> 条：
+<strong>57 PASS</strong> / <strong>0 FAIL</strong> / <strong>0 WARN</strong> /
+<strong>21 SKIP</strong> / <strong>1 N/A</strong>。</p>
+</div>
+<div class="grid">
+<div class="card"><strong>79</strong><span>登记</span></div>
+<div class="card"><strong>57</strong><span>已执行</span></div>
+<div class="card"><strong style="color:var(--ok)">57</strong><span>通过</span></div>
+<div class="card"><strong style="color:var(--err)">0</strong><span>失败</span></div>
+<div class="card"><strong>21</strong><span>跳过</span></div>
+<div class="card"><strong>1</strong><span>不适用</span></div>
+</div>
+<div class="note"><strong>SKIP：</strong>TC-011~013 需明细数据；TC-032/071 需对照数据；SEC-001/002 本地无 IAM；
+EXC/PERF/COMP 部分需专项环境，测试环境补测。</div>
+<h2>一、功能用例 TC-001 ~ TC-074</h2><table><thead><tr><th>ID</th><th>标题</th><th>优先级</th><th>结果</th><th>方式</th><th>说明</th></tr></thead><tbody>
+<tr><td>TC-001</td><td>默认进入为当前时刻态</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>default now mode; history picker hidden; 10s auto-refresh visible</td></tr>
+<tr><td>TC-002</td><td>切换到历史时刻态</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>history picker enabled; auto-refresh hidden; query 10:00 snapshot=10:00:00</td></tr>
+<tr><td>TC-003</td><td>历史态切回当前态</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>switch back to now mode restores picker hidden and auto-refresh</td></tr>
+<tr><td>TC-010</td><td>三态统计卡数量正确</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>q=0 r=1 z=0</td></tr>
+<tr><td>TC-011</td><td>排队中明细字段</td><td>P0</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>no QUEUED rows</td></tr>
+<tr><td>TC-012</td><td>执行中明细</td><td>P1</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>no running rows</td></tr>
+<tr><td>TC-013</td><td>僵尸明细</td><td>P1</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>no zombie rows</td></tr>
+<tr><td>TC-014</td><td>空数据展示</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>DB has data</td></tr>
+<tr><td>TC-020</td><td>历史分钟查询</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>API rebuild ok</td></tr>
+<tr><td>TC-021</td><td>未来时间报错</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>same as API-003</td></tr>
+<tr><td>TC-022</td><td>历史静态不刷新</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>history mode static snapshot, no auto refresh in 30s</td></tr>
+<tr><td>TC-023</td><td>快照时间边界</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>snapshotTime=query time</td></tr>
+<tr><td>TC-030</td><td>跨集合去重</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>no cross-set dup</td></tr>
+<tr><td>TC-031</td><td>集内最新实例</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>no dup jobId in running</td></tr>
+<tr><td>TC-032</td><td>非队列范围</td><td>P1</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need known direct job</td></tr>
+<tr><td>TC-040</td><td>10s自动刷新</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>10s auto-refresh snapshot 14:15:29 to 14:15:41 in 11s</td></tr>
+<tr><td>TC-041</td><td>历史禁用刷新</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>auto-refresh checkbox hidden in history mode</td></tr>
+<tr><td>TC-042</td><td>关闭停止轮询</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>uncheck stops timer per watch hook</td></tr>
+<tr><td>TC-050</td><td>按日查询分析</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>TC-051</td><td>优先级筛选</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>TC-052</td><td>切片粒度</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>TC-053</td><td>无数据日</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>TC-060</td><td>高优SLA</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>rate=100.00 total=0</td></tr>
+<tr><td>TC-061</td><td>普通SLA</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>rate=100.00 total=40</td></tr>
+<tr><td>TC-062</td><td>最大深度等待</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>depth=0 wait=1s</td></tr>
+<tr><td>TC-063</td><td>图①深度vs并发</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>4 ECharts canvases; depth vs concurrency dual-axis</td></tr>
+<tr><td>TC-064</td><td>图②分位</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>P50 P90 P99 lines rendered</td></tr>
+<tr><td>TC-065</td><td>图表联动</td><td>N/A</td><td><span class="tag tag-na">N/A</span></td><td>API</td><td>phase1 not implemented</td></tr>
+<tr><td>TC-066</td><td>图③吞吐</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>enqueue submit done bar chart</td></tr>
+<tr><td>TC-067</td><td>图④僵尸</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>zombie detection bar chart area ok</td></tr>
+<tr><td>TC-070</td><td>按小时表24行</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>hourly=24</td></tr>
+<tr><td>TC-071</td><td>超基线标红</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need over-baseline hour</td></tr>
+<tr><td>TC-072</td><td>TopN排序</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>count=10</td></tr>
+<tr><td>TC-073</td><td>TopN分页</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>page2 ok</td></tr>
+<tr><td>TC-074</td><td>TopN优先级</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+</tbody></table>
+<h2>二、接口用例 API-001 ~ API-016</h2><table><thead><tr><th>ID</th><th>标题</th><th>优先级</th><th>结果</th><th>方式</th><th>说明</th></tr></thead><tbody>
+<tr><td>API-001</td><td>snapshot当前态</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>counts match lists=True</td></tr>
+<tr><td>API-002</td><td>snapshot历史</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>history 10:00</td></tr>
+<tr><td>API-003</td><td>snapshot未来</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>reject future</td></tr>
+<tr><td>API-004</td><td>snapshot非法t</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-005</td><td>snapshot默认mode</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-010</td><td>analyze当日</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>slices=288 hourly=24</td></tr>
+<tr><td>API-011</td><td>analyze优先级</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-012</td><td>analyze1hour</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>count=24</td></tr>
+<tr><td>API-013</td><td>analyze基线</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-014</td><td>analyze非法day</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-015</td><td>analyze未来日</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>API-016</td><td>analyze契约</td><td>P1</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+</tbody></table>
+<h2>三、回归项 FIX-001 ~ FIX-003</h2><table><thead><tr><th>ID</th><th>标题</th><th>优先级</th><th>结果</th><th>方式</th><th>说明</th></tr></thead><tbody>
+<tr><td>FIX-001</td><td>snapshotTime回归</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>snapshotTime=2026-09-09 10:00:00</td></tr>
+<tr><td>FIX-002</td><td>优先级过滤回归</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>FIX-003</td><td>java.time回归</td><td>P0</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>code review compile ok</td></tr>
+</tbody></table>
+<h2>四、异常 / 安全 / 性能 / 兼容性 / 易用性</h2><table><thead><tr><th>ID</th><th>标题</th><th>优先级</th><th>结果</th><th>方式</th><th>说明</th></tr></thead><tbody>
+<tr><td>COMP-001</td><td>Chrome</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>see UI section</td></tr>
+<tr><td>COMP-002</td><td>Edge/Firefox</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>not tested</td></tr>
+<tr><td>COMP-003</td><td>分辨率</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>not tested</td></tr>
+<tr><td>COMP-004</td><td>4K</td><td>P3</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>not tested</td></tr>
+<tr><td>COMP-005</td><td>弱网</td><td>P3</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>not tested</td></tr>
+<tr><td>EXC-001</td><td>超时</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need slow mock</td></tr>
+<tr><td>EXC-002</td><td>DB不可达</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need disconnect</td></tr>
+<tr><td>EXC-003</td><td>空数据</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>EXC-004</td><td>大数据</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need fixture</td></tr>
+<tr><td>EXC-005</td><td>断网</td><td>P3</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>need unplug</td></tr>
+<tr><td>EXC-006</td><td>时钟漂移</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>uses DB NOW</td></tr>
+<tr><td>PERF-001</td><td>snapshot时延</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>248ms</td></tr>
+<tr><td>PERF-002</td><td>analyze时延</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>167ms</td></tr>
+<tr><td>PERF-003</td><td>大数据</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>no 5000 records</td></tr>
+<tr><td>PERF-004</td><td>刷新压力</td><td>P2</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>needs 5min monitor</td></tr>
+<tr><td>PERF-005</td><td>并发</td><td>P3</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>no load test</td></tr>
+<tr><td>SEC-001</td><td>无token snapshot</td><td>P1</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>local no IAM gateway</td></tr>
+<tr><td>SEC-002</td><td>无token analyze</td><td>P1</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>local no IAM gateway</td></tr>
+<tr><td>SEC-003</td><td>SQL注入t</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>SEC-004</td><td>SQL注入day</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td></td></tr>
+<tr><td>SEC-005</td><td>无堆栈</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>API</td><td>bad param no stack</td></tr>
+<tr><td>SEC-006</td><td>审计</td><td>P3</td><td><span class="tag tag-skip">SKIP</span></td><td>API</td><td>platform log</td></tr>
+<tr><td>USA-001</td><td>loading反馈</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>loading on query; 21 info icons in main</td></tr>
+<tr><td>USA-002</td><td>未来提示</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>future time rejected same as API-003 via interceptor</td></tr>
+<tr><td>USA-003</td><td>术语一致</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>terms consistent across tabs</td></tr>
+<tr><td>USA-004</td><td>空状态</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>empty shows no-data placeholder</td></tr>
+<tr><td>USA-005</td><td>一键刷新</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>refresh button reloads snapshot</td></tr>
+<tr><td>USA-006</td><td>范围文案</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>scope hint text visible at toolbar</td></tr>
+<tr><td>USA-007</td><td>图表tooltip</td><td>P2</td><td><span class="tag tag-pass">PASS</span></td><td>UI</td><td>ECharts tooltip configured on slice charts</td></tr>
+</tbody></table>
+<h2>五、遗留建议</h2>
+<table>
+<tr><th>项</th><th>状态</th><th>建议</th></tr>
+<tr><td>TC-065 图表联动</td><td>N/A</td><td>二期补测</td></tr>
+<tr><td>TC-011~013 明细对账</td><td>SKIP</td><td>有数据时补测</td></tr>
+<tr><td>SEC-001/002</td><td>SKIP</td><td>测试环境经网关补测</td></tr>
+<tr><td>PERF/COMP</td><td>SKIP</td><td>UAT 可选</td></tr>
+</table>
+<p class="meta" style="margin-top:28px;border-top:1px solid var(--border);padding-top:12px">
+重跑：<code>run-queue-full-tests.ps1</code> → <code>generate-full-report.ps1</code> → <code>node generate_report.mjs</code>
+</p>
+</div>
+</body>
+</html>

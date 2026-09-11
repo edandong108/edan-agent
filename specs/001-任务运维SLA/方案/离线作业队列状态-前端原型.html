@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>离线作业队列状态 — 前端原型</title>
+  <style>
+    :root { --primary: #c41230; --blue: #1677ff; --text: #1a1a1a; --muted: #888; --border: #e8e8e8; --ok: #52c41a; --warn: #faad14; --err: #ff4d4f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Microsoft YaHei", sans-serif; color: var(--text); background: #eef1f5; line-height: 1.55; font-size: 14px; }
+    .page { max-width: 1180px; margin: 20px auto 48px; padding: 24px 28px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.08); border-radius: 4px; }
+    h1 { margin: 0 0 4px; font-size: 20px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; }
+    .meta { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+    h2 { font-size: 15px; margin: 22px 0 10px; padding-left: 8px; border-left: 4px solid var(--primary); }
+    h3 { font-size: 14px; margin: 14px 0 8px; color: #333; }
+    p, li { font-size: 13px; }
+    table.info { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+    table.info th, table.info td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+    table.info th { background: #fafafa; }
+    .note { background: #fffbe6; border-left: 3px solid var(--warn); padding: 9px 12px; font-size: 13px; margin: 10px 0; }
+    .blue-note { background: #e6f4ff; border-left: 3px solid var(--blue); padding: 9px 12px; font-size: 13px; margin: 10px 0; }
+    .draft-tag { display: inline-block; background: #fff1f0; color: var(--primary); border: 1px solid #ffccc7; font-size: 11px; padding: 1px 8px; border-radius: 3px; margin-left: 8px; vertical-align: middle; }
+    .portal-wrap { border: 1px solid var(--border); border-radius: 6px; background: #fafafa; margin: 14px 0; overflow: hidden; }
+    .portal-head { background: #fff; padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .portal-title { font-size: 17px; font-weight: 600; }
+    .portal-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn { padding: 5px 14px; border-radius: 4px; font-size: 13px; border: 1px solid #d9d9d9; background: #fff; }
+    .btn-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .seg { display: inline-flex; border: 1px solid #d9d9d9; border-radius: 5px; overflow: hidden; }
+    .seg button { border: none; background: transparent; padding: 5px 14px; font-size: 12px; color: var(--muted); }
+    .seg button.on { background: var(--blue); color: #fff; font-weight: 600; }
+    .dt-pick { border: 1px solid #d9d9d9; border-radius: 4px; padding: 5px 10px; font-size: 13px; background: #fff; min-width: 190px; }
+    .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 20px; background: #fff; }
+    .stat-card { border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; position: relative; overflow: hidden; }
+    .stat-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+    .stat-queue::before { background: var(--blue); }
+    .stat-run::before { background: var(--ok); }
+    .stat-zombie::before { background: var(--err); }
+    .stat-label { font-size: 12px; color: var(--muted); }
+    .stat-num { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .stat-queue .stat-num { color: var(--blue); }
+    .stat-run .stat-num { color: var(--ok); }
+    .stat-zombie .stat-num { color: var(--err); }
+    .stat-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .detail-section { padding: 0 20px 16px; }
+    .sec-card { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 14px; background: #fff; }
+    .sec-head { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .sec-title { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-blue { background: var(--blue); } .dot-green { background: var(--ok); } .dot-red { background: var(--err); }
+    .badge { font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+    .badge-blue { background: #e6f4ff; color: #0958d9; } .badge-green { background: #f6ffed; color: #389e0d; } .badge-red { background: #fff2f0; color: #cf1322; }
+    table.dt { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.dt th, table.dt td { border-bottom: 1px solid #f0f0f0; padding: 8px 12px; text-align: left; }
+    table.dt th { background: #fafafa; font-weight: 600; white-space: nowrap; color: #555; }
+    .tag { font-size: 11px; padding: 1px 7px; border-radius: 3px; }
+    .tag-high { background: #fff1f0; color: var(--primary); border: 1px solid #ffccc7; }
+    .tag-normal { background: #f5f5f5; color: #666; border: 1px solid #e8e8e8; }
+    .mono { font-family: Consolas, monospace; }
+    .snap-bar { padding: 8px 20px; background: #f6f8fa; border-bottom: 1px solid var(--border); font-size: 12px; color: #555; display: flex; justify-content: space-between; }
+    @media (max-width: 760px) { .stat-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>离线作业队列状态 — 前端原型 <span class="draft-tag">产品草稿 · 未开发</span></h1>
+    <p class="meta">数据交换中心 · 队列状态查询页 · SLA 保障第一阶段 · 2026-09-08 · 仅供评审交互</p>
+
+    <div class="blue-note">
+      <strong>定位：</strong>运维观察"某时刻队列里排了多少、执行了多少、有没有僵尸"的快照页。数据来自 <code>schedule_queue</code> 历史表（append-only），<strong>只读</strong>，不参与调度。一期 <code>sla_priority</code> 仅展示不参与排序，排队恒按 <code>submit_time</code> 升序（FIFO）。
+    </div>
+
+    <h2>一、页面原型</h2>
+    <div class="portal-wrap">
+      <div class="portal-head">
+        <div>
+          <div class="portal-title">离线作业队列状态</div>
+          <div class="portal-sub">仅统计经队列提交的作业（开关关闭 / 白名单外直启的作业不在快照中）</div>
+        </div>
+        <div class="toolbar">
+          <div class="seg"><button class="on">当前时刻</button><button>历史时刻</button></div>
+          <input class="dt-pick" value="2026-09-08 15:00:00" disabled />
+          <button class="btn">查询</button>
+          <button class="btn btn-blue">刷新</button>
+          <label style="font-size:12px;color:var(--muted)"><input type="checkbox" /> 10s 自动刷新</label>
+        </div>
+      </div>
+      <div class="snap-bar">
+        <span>快照时间：<strong>2026-09-08 15:00:00</strong>（数据库 NOW()）</span>
+        <span>回看窗口：排队 2h · 执行 24h · 僵尸心跳阈值 100s</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card stat-queue"><div class="stat-label">排队中</div><div class="stat-num">3</div><div class="stat-hint">按 submit_time 升序，等待提交到集群</div></div>
+        <div class="stat-card stat-run"><div class="stat-label">执行中</div><div class="stat-num">1</div><div class="stat-hint">经队列提交且正在执行（含 PENDING）</div></div>
+        <div class="stat-card stat-zombie"><div class="stat-label">僵尸</div><div class="stat-num">1</div><div class="stat-hint">心跳停摆超阈值，实时派生不写库</div></div>
+      </div>
+      <div class="detail-section">
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-blue"></span>排队中 <span class="badge badge-blue">3</span></div><span style="font-size:12px;color:var(--muted)">等待时长 = 快照时间 − submit_time</span></div>
+          <table class="dt"><thead><tr><th style="width:90px">jobId</th><th>湖表名</th><th style="width:80px">优先级</th><th style="width:120px">入队时间</th><th style="width:90px">等待时长</th></tr></thead><tbody>
+            <tr><td class="mono">1012</td><td>dws.dim_policy</td><td><span class="tag tag-high">高优</span></td><td class="mono">14:54:40</td><td>320s</td></tr>
+            <tr><td class="mono">1035</td><td>dws.fact_claim</td><td><span class="tag tag-normal">普通</span></td><td class="mono">14:57:00</td><td>180s</td></tr>
+            <tr><td class="mono">1077</td><td>ods.customer</td><td><span class="tag tag-normal">普通</span></td><td class="mono">14:59:15</td><td>45s</td></tr>
+          </tbody></table>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-green"></span>执行中 <span class="badge badge-green">1</span></div><span style="font-size:12px;color:var(--muted)">已执行时长 = 快照时间 − instance.created_at</span></div>
+          <table class="dt"><thead><tr><th style="width:90px">jobId</th><th>湖表名</th><th style="width:80px">优先级</th><th style="width:120px">实例创建时间</th><th style="width:110px">实例状态</th><th style="width:100px">已执行时长</th></tr></thead><tbody>
+            <tr><td class="mono">1008</td><td>dws.dim_agent</td><td><span class="tag tag-high">高优</span></td><td class="mono">14:56:30</td><td><span class="tag tag-normal">RUNNING</span></td><td>210s</td></tr>
+          </tbody></table>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-red"></span>僵尸 <span class="badge badge-red">1</span></div><span style="font-size:12px;color:var(--muted)">死实例的"已执行时长"无意义，不展示</span></div>
+          <table class="dt"><thead><tr><th style="width:90px">jobId</th><th>湖表名</th><th style="width:80px">优先级</th><th style="width:120px">实例创建时间</th><th style="width:120px">最后心跳</th></tr></thead><tbody>
+            <tr><td class="mono">1042</td><td>ods.payment</td><td><span class="tag tag-normal">普通</span></td><td class="mono">14:30:12</td><td class="mono">14:42:05</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <h2>二、历史时刻态（切换"历史时刻"后）</h2>
+    <div class="portal-wrap">
+      <div class="portal-head">
+        <div><div class="portal-title">离线作业队列状态</div><div class="portal-sub">回溯某时刻的队列积压与执行情况</div></div>
+        <div class="toolbar">
+          <div class="seg"><button>当前时刻</button><button class="on">历史时刻</button></div>
+          <input class="dt-pick" value="2026-06-01 12:00:00" />
+          <button class="btn btn-blue">查询快照</button>
+        </div>
+      </div>
+      <div class="snap-bar">
+        <span>快照时间：<strong>2026-06-01 12:00:00</strong>（T ≤ 数据库 NOW()，不允许选未来）</span>
+        <span>历史快照为尽力重建，非精确记录</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card stat-queue"><div class="stat-label">排队中</div><div class="stat-num">3</div><div class="stat-hint">区间 [submit_time, finished_at) 覆盖 T</div></div>
+        <div class="stat-card stat-run"><div class="stat-label">执行中</div><div class="stat-num">1</div><div class="stat-hint">区间 [created_at, 终点) 覆盖 T</div></div>
+        <div class="stat-card stat-zombie"><div class="stat-label">僵尸</div><div class="stat-num">1</div><div class="stat-hint">T 时已过心跳存活上界</div></div>
+      </div>
+      <div class="detail-section">
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-blue"></span>排队中 <span class="badge badge-blue">3</span></div><span style="font-size:12px;color:var(--muted)">明细同当前态，时间为历史时刻</span></div>
+          <table class="dt"><thead><tr><th>jobId</th><th>湖表名</th><th>优先级</th><th>入队时间</th><th>等待时长</th></tr></thead><tbody>
+            <tr><td class="mono">1012</td><td>dws.dim_policy</td><td><span class="tag tag-high">高优</span></td><td class="mono">11:54:40</td><td>320s</td></tr>
+            <tr><td class="mono">1035</td><td>dws.fact_claim</td><td><span class="tag tag-normal">普通</span></td><td class="mono">11:57:00</td><td>180s</td></tr>
+            <tr><td class="mono">1077</td><td>ods.customer</td><td><span class="tag tag-normal">普通</span></td><td class="mono">11:59:15</td><td>45s</td></tr>
+          </tbody></table>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-green"></span>执行中 <span class="badge badge-green">1</span></div></div>
+          <table class="dt"><thead><tr><th>jobId</th><th>湖表名</th><th>优先级</th><th>实例创建时间</th><th>实例状态</th><th>已执行时长</th></tr></thead><tbody>
+            <tr><td class="mono">1008</td><td>dws.dim_agent</td><td><span class="tag tag-high">高优</span></td><td class="mono">11:56:30</td><td><span class="tag tag-normal">SUCCESS</span></td><td>210s</td></tr>
+          </tbody></table>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title"><span class="dot dot-red"></span>僵尸 <span class="badge badge-red">1</span></div></div>
+          <table class="dt"><thead><tr><th>jobId</th><th>湖表名</th><th>优先级</th><th>实例创建时间</th><th>最后心跳</th></tr></thead><tbody>
+            <tr><td class="mono">1042</td><td>ods.payment</td><td><span class="tag tag-normal">普通</span></td><td class="mono">11:30:12</td><td class="mono">11:42:05</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <h2>三、交互要点</h2>
+    <table class="info">
+      <tr><th style="width:120px">要点</th><th>说明</th></tr>
+      <tr><td>时间切换</td><td>当前时刻（默认）/ 历史时刻二选一；历史时刻选未来时间报错，时钟以数据库 NOW() 为准</td></tr>
+      <tr><td>自动刷新</td><td>仅当前时刻态可用（10s 可选）；历史态为静态快照，不刷新</td></tr>
+      <tr><td>三段展示</td><td>排队中 / 执行中 / 僵尸，各一统计卡 + 明细表；某侧无数据则数量 0、不显示明细行</td></tr>
+      <tr><td>去重</td><td>同一 jobId 跨集合只归一侧（执行中 > 排队中 > 僵尸）；集内按 jobId 去重取最新实例</td></tr>
+      <tr><td>湖表名</td><td>出湖取 source_schema.source_table，入湖取 target_schema.target_table</td></tr>
+      <tr><td>优先级标签</td><td>高优 / 普通，一期只展示不参与排序</td></tr>
+      <tr><td>僵尸时长</td><td>不展示"已执行时长"（死实例时长无意义），仅展示创建时间与最后心跳</td></tr>
+      <tr><td>范围说明</td><td>页面顶部文案说明"仅经队列提交的作业"，避免运维困惑某 job 看不到</td></tr>
+    </table>
+
+    <h2>四、字段口径（与方案 7.5 对齐）</h2>
+    <table class="info">
+      <tr><th>列</th><th>排队中</th><th>执行中</th><th>僵尸</th></tr>
+      <tr><td>jobId</td><td>sq.job_id</td><td>sq.job_id</td><td>sq.job_id</td></tr>
+      <tr><td>湖表名</td><td colspan="3">JOIN job：出湖取 source_schema.source_table，入湖取 target_schema.target_table</td></tr>
+      <tr><td>优先级</td><td colspan="3">sq.sla_priority（0=普通 / 1=高优）</td></tr>
+      <tr><td>入队时间</td><td>sq.submit_time</td><td>—</td><td>—</td></tr>
+      <tr><td>等待时长</td><td>T − submit_time</td><td>—</td><td>—</td></tr>
+      <tr><td>实例创建时间</td><td>—</td><td>ji.created_at</td><td>ji.created_at</td></tr>
+      <tr><td>实例状态</td><td>—</td><td>ji.status（PENDING/RUNNING/SUCCESS/FAILED）</td><td>—</td></tr>
+      <tr><td>已执行时长</td><td>—</td><td>T − ji.created_at</td><td>不展示</td></tr>
+      <tr><td>最后心跳</td><td>—</td><td>—</td><td>ji.heart_beaten_at</td></tr>
+    </table>
+
+    <h2>五、与现有页面关系</h2>
+    <table class="info">
+      <tr><th>页面</th><th>视角</th><th>区别</th></tr>
+      <tr><td>任务管理列表</td><td>job 静态配置</td><td>不看实时排队</td></tr>
+      <tr><td>执行日志</td><td>实例执行结果</td><td>看每次跑的结果，不看队列积压</td></tr>
+      <tr><td>实时流管理</td><td>Flink/YARN 实时作业</td><td>实时流视角，不看离线排队</td></tr>
+      <tr><td><strong>队列状态（本页）</strong></td><td><strong>某时刻队列快照</strong></td><td><strong>看排队/执行/僵尸的瞬时分布</strong></td></tr>
+    </table>
+
+    <h2>六、待确认</h2>
+    <ol style="font-size:13px;padding-left:20px">
+      <li>历史时刻选择器精度：到秒还是到分？方案支持到秒。</li>
+      <li>是否需要"导出快照"按钮（运维留存取证）？</li>
+      <li>僵尸段是否要加"建议处理"提示（如联系 DBA / 重新触发）？一期可只展示。</li>
+      <li>菜单挂载位置：数据交换下与"执行日志"并列，还是单独"SLA 运维"分组？</li>
+      <li>自动刷新间隔：10s 是否合适？轮询对元数据库有压力。</li>
+    </ol>
+
+    <div class="note">
+      <strong>不改现有代码：</strong>本原型为独立 HTML 草稿，仅用于评审交互。确认后再排后端接口与前端页面开发。
+    </div>
+  </div>
+</body>
+</html>
