@@ -27,7 +27,7 @@ alwaysApply: true
 1. 先查看当前项目已有同类代码，**沿用既有风格**，不强行套用其他项目结构
 2. 前端改 `udp-portal`，后端改 `data-exchange`，不跨仓库混放
 3. 详细规范见 `.cursor/rules/frontend-standards.mdc` 与 `backend-standards.mdc`
-4. 产出文档默认写入 `核心文档/<功能名>功能/`；可复用材料放外层，见 `document-output.mdc`
+4. 产出文档默认写入 `核心文档/<功能名>功能/`（生产车间+全量仓库，可复用材料放外层）；功能**定稿件**精简入 `dataexchange_portal_agent/specs/` 需求/方案/测试三层（精选知识层，按【功能名】命名）；详见 `document-output.mdc` 与仓内 `spec-flow.mdc`
 
 ## 与本项目对齐的关键差异
 
