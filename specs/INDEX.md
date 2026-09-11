@@ -7,4 +7,4 @@
 
 | 编号 | 日期 | 标题 | 模式 | 质量 | 摘要 |
 |------|------|------|------|------|------|
-| [001](retro/2026-09-10-task-operations-sla.md) | 2026-09-10 | 任务运维：队列状态+队列分析（SLA 第一阶段） | retro | ★★ | 新增 queue-status/snapshot、queue-analysis/analyze 两端点（读副库 schedule_queue），前端双 Tab 壳页；19/19 接口验收通过；材料全集 [001-任务运维SLA/](001-任务运维SLA/)（需求/方案/测试已回填）；SLA 后续阶段与使用者节奏待口述 |
+| [001](retro/2026-09-10-task-operations-sla.md) | 2026-09-10 | 任务运维：队列状态+队列分析（SLA 第一阶段） | retro | ★★ | 新增 queue-status/snapshot、queue-analysis/analyze 两端点（读副库 schedule_queue），前端双 Tab 壳页；19/19 接口验收通过；材料在 specs 三层【任务运维SLA】；SLA 后续阶段与使用者节奏待口述 |
