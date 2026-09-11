@@ -2,7 +2,7 @@
 
 - 日期：2026-09-10 / 提交人：李栋 / 分支：`feature/queue-task-operations-sla1` → 前端 `develop-new`、后端 `dev_20260901_approval`
 - 涉及仓库：双端（后端 `00cd149` / 前端 `4f11ac5`，同分支名成对）
-- 材料全集：specs 三层下【任务运维SLA】——[需求/评审一页纸](../需求/评审一页纸-【任务运维SLA】.html)、方案/（技术方案+上线配置）、测试/（测试方案+报告+可复跑脚本链）
+- 材料全集：specs 三层下【任务运维SLA】——[需求/评审一页纸](../需求/评审一页纸-【任务运维SLA】.html)、方案/（技术方案+上线配置）、测试/（测试方案+报告；复跑脚本留 `核心文档/SLA功能/测试/`）
 - 生成方式：retro（diff 冷启动）· 质量级别：★★（C/B 满，A 部分已由回填材料解答）
 
 ## 改了什么 [C·自动]
@@ -43,9 +43,13 @@
 **建议验证**：
 
 ```powershell
-curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
-curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=history&t=<epoch_ms>"
-# analyze 与历史时刻查询需副库有数据（内网/VPN）
+$base = "http://localhost:8088/data-exchange/portal"
+curl "$base/queue-status/snapshot?mode=now"                        # 当前快照：三态计数+明细
+curl "$base/queue-status/snapshot?mode=history&t=<epoch_ms>"       # 历史快照（分钟级）
+curl "$base/queue-analysis/analyze?day=2026-09-10"                 # 断言 sliceSeries=288 / hourly=24 / topN≤10
+curl "$base/queue-analysis/analyze?day=2026-09-10&priority=high"   # 高优过滤（slice=1hour、baseline=20 同理）
+curl "$base/queue-analysis/analyze?day=2026/09/09"                 # 异常参数应 4xx 且不泄露堆栈
+# 历史/分析需副库有数据（内网/VPN）；完整自动化脚本留核心文档/SLA功能/测试/
 ```
 
 **边界风险**：历史时刻 T 久远的快照依赖 `finished_at` 完整性；分析接口按天加载，单日队列记录量级大时 419 行聚合逻辑需关注内存；`zombie` 判定依赖心跳间隔配置与执行端实际上报节奏一致。
