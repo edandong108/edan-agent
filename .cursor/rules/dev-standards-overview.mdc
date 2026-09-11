@@ -1,0 +1,36 @@
+---
+description: 本项目开发规范总览，引用相关规范目录
+alwaysApply: true
+---
+
+# 项目开发规范总览
+
+本仓库所有开发工作须遵循 `相关规范/` 目录下的团队规范：
+
+| 规范 | 源文件 | 适用范围 |
+|------|--------|----------|
+| 前端规范 | `相关规范/前端规范.doc` | `udp-portal/` |
+| 后端规范 | `相关规范/后端规范.doc` | `data-exchange/` |
+
+## 项目结构
+
+```
+实时配置自动化/
+├── data-exchange/    # 后端：Java 8 + PDFC4/Spring Boot + MyBatis
+├── udp-portal/       # 前端：Vue3 + TypeScript + Vite
+├── 核心文档/         # 方案、评审、技术分析等产出材料
+└── 相关规范/         # 团队前后端开发规范（权威来源）
+```
+
+## AI 编码前必做
+
+1. 先查看当前项目已有同类代码，**沿用既有风格**，不强行套用其他项目结构
+2. 前端改 `udp-portal`，后端改 `data-exchange`，不跨仓库混放
+3. 详细规范见 `.cursor/rules/frontend-standards.mdc` 与 `backend-standards.mdc`
+4. 产出文档默认写入 `核心文档/<功能名>功能/`；可复用材料放外层，见 `document-output.mdc`
+
+## 与本项目对齐的关键差异
+
+- 前端 UI 库：本项目使用 **Ant Design Vue**（非 Element Plus），但 TS/Vue3/目录/hooks 等规范同样适用
+- 后端包结构：使用 `api/`（非 controller/）、`ApiResponse`、`CommonException`、`CommonExceptionCode`
+- 后端返回体字段为 `status` / `statusText`（与规范中的 code/msg 表述不同，以项目现有代码为准）

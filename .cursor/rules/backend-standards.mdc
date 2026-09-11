@@ -1,0 +1,126 @@
+---
+description: 后端开发规范（data-exchange）
+globs: data-exchange/**/*
+alwaysApply: false
+---
+
+# 后端开发规范
+
+权威来源：`相关规范/后端规范.doc`。以下为 data-exchange 开发时必须遵守的要点。
+
+## 技术栈（硬性限制）
+
+- Java 8（禁止 Java 9+ 语法）
+- PDFC4 / Spring Boot 2.7.x
+- MyBatis（注解 / SqlProvider，沿用项目既有风格）
+- GaussDB（生产）；Redis、Consul、Apollo 按需
+- 公共模块：`com.picc.udp:udp-common`
+- Lombok、Commons Lang3、Jackson、Slf4j
+- 测试：JUnit 5 + Mockito + Spring Test
+
+## 分层架构（data-exchange 现状）
+
+```
+com.picc.udp/
+├── Application.java
+├── api/              # REST 接口层（本项目用 api，非 controller）
+├── service/          # 业务编排、事务边界
+├── dao/
+│   ├── entity/
+│   └── mapper/       # 含 secondary 子包
+├── dto/
+├── enums/
+├── common/exception/ # CommonException、CommonExceptionCode
+├── config/
+└── util/
+```
+
+| 层级 | 职责 | 禁止 |
+|------|------|------|
+| api | 接收参数、权限、调 Service、返回 ApiResponse | 核心业务、事务、直调 Mapper |
+| service | 业务编排、事务、校验 | 解析 HTTP、写 SQL |
+| mapper | CRUD | 业务判断、事务 |
+| entity | 表映射 | 业务方法、直接作接口返回 |
+| dto | 传输对象 | 与 Entity 混用 |
+
+**接入原则：先看同类代码（如 JobController、JobServiceImpl），沿用命名与包结构。**
+
+## 命名
+
+- 类：大驼峰；方法/变量：小驼峰动词开头
+- 常量：UPPER_SNAKE_CASE
+- 枚举：大驼峰类名 + 全大写值
+- 表/字段：小写下划线；Java 属性小驼峰
+- 禁止拼音、data1/temp 等无意义命名
+
+## 代码风格
+
+- 阿里巴巴 Java 手册；4 空格；单行 ≤120 字符
+- Entity/DTO：`@Data`；日志：`@Slf4j`
+- 时间：`java.time.LocalDateTime`（禁止新增 Date）
+- 金额：`BigDecimal`
+- 单方法不宜超 80 行；魔法值提取常量/枚举
+
+## 异常与响应
+
+```java
+// ✅ 业务/参数错误
+throw new CommonException(CommonExceptionCode.INVALID_PARAM_ERROR, "userId");
+
+// ✅ 统一成功响应
+return ApiResponse.success(data);
+
+// ❌ 禁止
+throw new RuntimeException("error");
+return Map<String, Object>;
+```
+
+- 错误码追加到 `CommonExceptionCode` + `i18n/messages.properties`
+- 用户可见文案走 `MessageUtils`，禁止硬编码
+- 禁止 Controller try-catch 吞异常
+- 失败由 `GlobalExceptionHandler` 统一处理
+
+## 日志
+
+- `@Slf4j`，占位符 `{}`，禁止字符串拼接
+- error：系统异常带堆栈；warn：业务失败；info：关键节点
+- 敏感信息脱敏；`log.error("msg", e)` 必须传异常对象
+
+## 数据库 & MyBatis
+
+- 禁止 `SELECT *`、N+1、循环查库
+- 列表强制分页；动态 SQL 沿用 `@InsertProvider` 等既有方式
+- Mapper 只做数据访问；`#{}` 防注入，禁止 `${}` 拼用户输入
+- 写操作 Service 层 `@Transactional(rollbackFor = Exception.class)`
+- 避免长事务（事务内不调外部 HTTP/MQ）
+
+## API 规范
+
+- Controller 薄层；参数 `@Valid` + JSR-303
+- 权限在 Controller 或拦截层（如 `@PermissionCheck`）
+- 新接口路径与项目一致：`/data-exchange/portal/...`
+- 分页用项目统一 `PageResp`
+
+## 复用优先
+
+| 场景 | 动作 |
+|------|------|
+| 响应/异常/分页 | 用现有 ApiResponse、CommonException |
+| 工具类 | 用 util 包或 Commons |
+| JSON | 与项目一致（Gson/Jackson 不混用） |
+| 常量/枚举 | 追加到已有类 |
+
+## Git 与交付
+
+- 最小 Diff，只改任务相关文件
+- 禁止批量格式化、无关 import
+- 提交：`feat:` / `fix:` / `test:` / `refactor:` + 描述
+- 新增核心业务须有测试；`mvn test` 通过
+
+## 反模式速查
+
+- Controller 直注 Mapper → 走 Service
+- 新建平行异常体系 → 用 CommonException
+- 返回 Entity/Map → 用 ApiResponse\<DTO\>
+- 循环 selectById → 批量查询
+- 硬编码错误文案 → i18n 错误码

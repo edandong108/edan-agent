@@ -1,0 +1,37 @@
+---
+description: 知识沉淀与 spec 流规则（数据交换中心）
+alwaysApply: true
+---
+
+# 知识沉淀规则（dataexchange_portal_agent）
+
+本仓是数据交换中心的**知识中转站**：业务代码在 `data-exchange/`（后端）与 `udp-portal/`（前端），本仓只放知识。
+
+## 接手任何任务前
+
+1. 先读 `AGENTS.md`（环境与规矩）
+2. 涉及具体功能：读 `specs/INDEX.md` 定位相关迭代卡/spec，读完再动代码
+3. 涉及前后端联动：必读 `docs/API-CONTRACT.md`（接口契约的唯一真相源）
+
+## 开发模式（agent 开发的迭代）
+
+- 无 spec 不开发：先在 `specs/NNN-功能名/` 完成 requirements → design → tasks，经用户批准后才写实现代码
+- tasks.md 是执行契约：只写「任务 + 验收命令（curl 级）+ 依赖/[P] 并行标记」，一页以内；实现完成 = 全部验收命令通过，而非"代码写完了"
+- 改动若影响 `docs/API-CONTRACT.md` 描述的接口：业务仓提交代码，**同迭代**在本仓更新契约（retro 生卡时校验）
+- spec 与代码不一致时：以最新批准的 spec 为准，agent 主动报告不一致
+
+## 知识中转站（定期执行，用户说"生成迭代卡"或每周五触发）
+
+- 分析 `git log <上次锚点>..HEAD` 的增量提交（前后端两仓库分别处理）
+- 按 `specs/_templates/retro-card.md` 模板逐次生成迭代卡到 `specs/retro/`
+- C 级（改动事实）从 diff 提取；B 级（意图）带置信度；A 级（业务背景）只列待补问题
+- 更新 `specs/INDEX.md`；输出本周知识债务清单
+- 锚点管理：`specs/retro/.anchor.txt` 双仓各记一行（`backend=<hash>` / `frontend=<hash>`），生卡后更新
+
+## 知识纪律
+
+- diff 只能证明"改了什么"，推不出"为什么"——B 级必须带置信度
+- A 级空白处生成待补问题，不编造
+- 宁可留白，不可污染：错误的业务背景会误导下一个接手者
+- 业务仓分支模型：`develop-new`（前端）/ `dev_20260901_approval`（后端）← `feature/xxx`
+- 提交公司 Gitee 前必读 `.cursor/skills/picc-gitee-commit/SKILL.md`
