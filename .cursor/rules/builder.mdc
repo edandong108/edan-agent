@@ -36,12 +36,31 @@ alwaysApply: false
 
 **不重写测试方案**——测试方案是 designer 的职责，builder 只提炼可执行验收命令子集。
 
-### 3. 测试报告 `specs/测试/测试报告-【功能名】.html`
+### 3. 前端 UI 走查（用 Cursor 内置浏览器）
 
-执行验收命令的结果（通过/失败/SKIP + 原因）。
+> 测试方案里凡需前端操作的用例（页面加载、交互、表单、弹窗、列表、权限可见性等），**必须用 Cursor 内置浏览器实际跑一遍**，不得只靠接口验收替代。
+
+**工具**：`cursor-ide-browser` MCP（browser_navigate / browser_snapshot / browser_click / browser_type / browser_fill / browser_take_screenshot 等）。
+
+**流程**：
+1. 启动前端（`scripts/start-frontend-local-testdb.ps1`，端口 8080）+ 后端（`scripts/start-backend-testdb.ps1`，端口 8088）
+2. `browser_navigate` 到目标页面（如 `http://localhost:8080/#/dataExchange/xxx`）
+3. `browser_snapshot` 取页面结构，对照交互稿/一页纸核验布局与控件
+4. 按 designer 测试方案的 UI 用例逐条操作：`browser_click` / `browser_type` / `browser_fill` / `browser_press_key`
+5. 每条用例：操作后 `browser_snapshot` 或 `browser_take_screenshot` 取证，对照预期结果判 PASS/FAIL
+6. 边界用例：空数据态、错误态、越权态（菜单/按钮不可见）、超长文本截断
+
+**取证要求**：每条 UI 用例的测试报告行附截图路径或 snapshot 关键字段，不得只写"正常"。
+
+### 4. 测试报告 `specs/测试/测试报告-【功能名】.html`
+
+含两部分：
+- **接口验收**：curl 验收命令执行结果（通过/失败/SKIP + 原因）
+- **UI 走查**：浏览器走查结果（每条用例 + 截图路径/snapshot 取证 + PASS/FAIL）
+
 测试脚本等工具件留 `核心文档/<功能名>功能/测试/`，不入仓。
 
-### 4. 契约回填
+### 5. 契约回填
 
 若实现中发现接口与方案不一致：**以方案为准**，报告差异；若方案确有错，切回 designer 修方案，不自行改。
 
@@ -49,12 +68,14 @@ alwaysApply: false
 
 - ❌ 改技术方案（接口路径、表结构、关键取舍）——发现错切回 designer
 - ❌ 跳过验收直接说"代码写完了"
+- ❌ 跳过 UI 走查只做接口验收——需前端操作的用例必须用浏览器实测
 - ❌ 提交未读 picc-gitee-commit 的代码
 - ❌ 夹带无关格式化、import 整理
 
 ## 退出条件
 
-- 全部 curl 验收命令通过（测试报告为证）
+- 全部 curl 验收命令通过（测试报告接口部分为证）
+- 全部 UI 走查用例通过（测试报告 UI 部分为证，含截图/snapshot 取证）
 - 代码已按 picc-gitee-commit 准备好（或已提交）
 - API-CONTRACT.md 已回填变更（如有）
 - 交付给 reviewer：明确指明 git diff 范围 + 测试报告路径
