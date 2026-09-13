@@ -68,4 +68,4 @@ curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
 | 环境怎么搭 | `docs/DEV-ENVIRONMENT.md` |
 | 规范执行版 | `.cursor/rules/*.mdc` + `docs/STANDARDS.md` |
 | 某次迭代改了什么 | `specs/INDEX.md` → `specs/retro/` |
-| 新功能开发流程 | `specs/` 三层（需求/方案/测试）+ `.cursor/rules/spec-flow.mdc` |
+| 新功能开发流程 | `specs/` 三层（需求/方案/测试）+ `.cursor/rules/spec-flow.mdc` + 三角色 mdc（designer/builder/reviewer） |

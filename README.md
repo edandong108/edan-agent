@@ -21,7 +21,7 @@ dataexchange_portal_agent/
 │   ├── 需求/ 方案/ 测试/  功能材料三层（扁平，按【功能名】命名聚拢；评审一页纸即需求）
 │   └── retro/             迭代卡（交付后收口，所有迭代都有）+ .anchor.txt（双仓锚点）
 └── .cursor/           agent 执行层（clone 即生效）
-    ├── rules/             spec-flow + 前后端规范执行版
+    ├── rules/             spec-flow + 前后端规范 + **三角色（designer/builder/reviewer）**
     └── skills/picc-gitee-commit/  提交纪律
 ```
 
