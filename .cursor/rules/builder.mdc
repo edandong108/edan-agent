@@ -36,13 +36,13 @@ alwaysApply: false
 
 **不重写测试方案**——测试方案是 designer 的职责，builder 只提炼可执行验收命令子集。
 
-### 3. 前端 UI 走查（用 Cursor 内置浏览器）
+### 3. 测试报告 `specs/测试/测试报告-【功能名】.html`
 
-> 测试方案里凡需前端操作的用例（页面加载、交互、表单、弹窗、列表、权限可见性等），**必须用 Cursor 内置浏览器实际跑一遍**，不得只靠接口验收替代。
+> 测试报告含两部分：接口验收 + UI 走查。凡测试方案里需前端操作的用例，**必须用 Cursor 内置浏览器实际跑一遍**，不得只靠接口验收替代。
 
-**工具**：`cursor-ide-browser` MCP（browser_navigate / browser_snapshot / browser_click / browser_type / browser_fill / browser_take_screenshot 等）。
+**接口验收**：执行 curl 验收命令的结果（通过/失败/SKIP + 原因）
 
-**流程**：
+**UI 走查**（用 `cursor-ide-browser` MCP：browser_navigate / browser_snapshot / browser_click / browser_type / browser_fill / browser_take_screenshot 等）：
 1. 启动前端（`scripts/start-frontend-local-testdb.ps1`，端口 8080）+ 后端（`scripts/start-backend-testdb.ps1`，端口 8088）
 2. `browser_navigate` 到目标页面（如 `http://localhost:8080/#/dataExchange/xxx`）
 3. `browser_snapshot` 取页面结构，对照交互稿/一页纸核验布局与控件
@@ -52,15 +52,9 @@ alwaysApply: false
 
 **取证要求**：每条 UI 用例的测试报告行附截图路径或 snapshot 关键字段，不得只写"正常"。
 
-### 4. 测试报告 `specs/测试/测试报告-【功能名】.html`
-
-含两部分：
-- **接口验收**：curl 验收命令执行结果（通过/失败/SKIP + 原因）
-- **UI 走查**：浏览器走查结果（每条用例 + 截图路径/snapshot 取证 + PASS/FAIL）
-
 测试脚本等工具件留 `核心文档/<功能名>功能/测试/`，不入仓。
 
-### 5. 契约回填
+### 4. 契约回填
 
 若实现中发现接口与方案不一致：**以方案为准**，报告差异；若方案确有错，切回 designer 修方案，不自行改。
 
