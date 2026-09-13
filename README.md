@@ -35,7 +35,11 @@ dataexchange_portal_agent/
 
 ## 日常节奏
 
-- **agent 开发新迭代**：`specs/需求·方案·测试/` 备好三层材料（按【功能名】命名，合格标准见 `.cursor/rules/spec-flow.mdc`），批准后开发 → 交付后验收结论回填对应 retro 卡
+- **agent 开发新迭代**（三角色串行，显式 `@designer`/`@builder`/`@reviewer` 激活）：
+  1. designer 备 `specs/需求·方案/` 三层材料（按【功能名】命名，合格标准见 `.cursor/rules/spec-flow.mdc`）→ 你批准
+  2. builder 按方案实现 + 验收命令全通过
+  3. reviewer 出分级建议清单 → 你拍板改
+  4. 交付后验收结论回填对应 retro 卡
 - **每周五（或说"生成迭代卡"）**：对双仓 `git log <锚点>..HEAD` 生成 retro 迭代卡 → 更新 `specs/INDEX.md` → 更新 `.anchor.txt` → 输出知识债务清单
 - **接口变更**：业务仓提交 + 本仓 `docs/API-CONTRACT.md` 同迭代更新
 - **规范更新**：`相关规范/*.doc` 变 → 同步 `.cursor/rules/*.mdc` → `docs/STANDARDS.md` 记对齐日期
