@@ -39,11 +39,12 @@ alwaysApply: false
 
 1. **契约一致性**：实现是否符技术方案的接口/表/组件拆分
 2. **验收覆盖性**：builder 的验收命令是否真覆盖 designer 测试方案的关键路径（P0/P1 不漏）
-3. **验收真实性**：测试报告的"通过"是否真跑过、边界是否覆盖
-4. **规范遵守**：前后端 standards 的硬性条款（Java 8 语法、TS strict、ApiResponse 等）
-5. **复用优先**：是否新建平行体系（重复造 ApiResponse/异常/工具类）
-6. **最小 diff**：是否夹带无关改动
-7. **提交纪律**：是否混入 Local*/mock/密钥（picc-gitee-commit）
+3. **UI 走查真实性**：测试报告 UI 部分是否真用浏览器跑过、截图/snapshot 取证是否齐全、边界态是否覆盖
+4. **验收真实性**：测试报告接口部分的"通过"是否真跑过、边界是否覆盖
+5. **规范遵守**：前后端 standards 的硬性条款（Java 8 语法、TS strict、ApiResponse 等）
+6. **复用优先**：是否新建平行体系（重复造 ApiResponse/异常/工具类）
+7. **最小 diff**：是否夹带无关改动
+8. **提交纪律**：是否混入 Local*/mock/密钥（picc-gitee-commit）
 
 ## 禁越界
 
