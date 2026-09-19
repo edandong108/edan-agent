@@ -1,0 +1,113 @@
+---
+description: 前端开发规范（udp-portal）
+globs: udp-portal/**/*
+alwaysApply: false
+---
+
+# 前端开发规范
+
+权威来源：`相关规范/前端规范.doc`。以下为 udp-portal 开发时必须遵守的要点。
+
+## 技术栈
+
+- Vue3 + TypeScript 5 + `<script setup lang="ts">`（唯一标准写法，禁止 Options API）
+- Vite 构建；UI 使用 **Ant Design Vue**（本项目现状）
+- 状态：Pinia（全局）+ ref/reactive（局部）；复杂逻辑抽 hooks
+- 请求：统一 `@/utils/request`，**禁止裸写 axios/fetch**
+- 样式：SCSS/Less，BEM 命名，禁止大量行内 style
+- ESLint + Prettier，2 空格缩进，UTF-8
+
+## 目录结构（新建文件遵守）
+
+```
+src/
+├── api/           # 按业务模块拆分，带 TS 类型
+├── components/
+│   ├── common/    # 全局通用组件
+│   └── business/  # 业务通用组件
+├── views/         # 页面模块，kebab-case
+│   └── xxx/
+│       ├── index.vue
+│       ├── types.ts
+│       ├── hooks/
+│       ├── components/
+│       └── index.scss
+├── hooks/         # 全局 hooks
+├── stores/        # Pinia（本项目为 stores/）
+├── types/         # 全局类型、枚举
+├── utils/
+└── router/
+```
+
+## 命名
+
+| 类型 | 规则 | 示例 |
+|------|------|------|
+| 页面/文件夹 | kebab-case | `task-management` |
+| 组件文件 | PascalCase | `MetricCard.vue` |
+| 接口/类型 | I 前缀 | `IMetricItem` |
+| 变量/函数 | camelCase | `getMetricPage` |
+| 常量 | UPPER_SNAKE_CASE | `MAX_EXPORT_SIZE` |
+| 布尔 | is/has/can 前缀 | `isShowModal` |
+
+## TypeScript（最高优先级）
+
+- `strict: true`，严禁 `any`
+- Props、Emits、接口入参/返回值全部显式类型
+- 禁止滥用 `!`；用 `?.`、`??` 处理空值
+- 参数超过 3 个封装对象类型
+- 枚举与后端一一对应，禁止硬编码数字状态
+
+## Vue3 组件
+
+- 结构顺序：`<script setup>` → `<template>` → `<style scoped>`
+- Props：`defineProps` + `withDefaults`，完整类型
+- Emits：`defineEmits` 严格类型；双向绑定用 `update:xxx`
+- 基础类型用 `ref`，对象/数组用 `reactive`
+- 分页：`reactive({ pageNum, pageSize, total })`
+- 加载态：`loading = ref(false)`，提交用 `submitLoading`
+- 派生数据用 `computed`，复杂 watch 抽入 hooks
+- **单文件超 300 行强制拆分**（hooks、子组件、types）
+
+## 组件化抽取（主动识别，避免过早抽象）
+
+> 与"300 行强制拆分"互补：300 行是被动红线，本节是主动抽取准则。
+
+**三次法则**：同样模式出现 2 次先观察、3 次抽取、5 次以上考虑上提到更通用层。
+
+**抽取层级**（按复用范围，不确定先放页面级）：
+
+| 复用范围 | 放哪 |
+|---------|------|
+| 单页面内 | `views/xxx/components/` |
+| 多页面共享、带业务语义 | `components/business/` |
+| 多页面共享、纯 UI 无业务 | `components/`（全局层） |
+
+**不抽**：只出现 1 次的不抽；业务易变的先内聚在页面；不为统一强行抽——抽象比重复更贵。
+
+**设计**：单一职责、props 单向 emit 上报、slot 优先于 renderProp、AntD 优先不重复造、types 共享不散落。
+
+## 接口请求
+
+- api 文件按模块导出，绑定 TS 类型
+- 全局 request 拦截 401/500/业务错误，组件内不重复弹窗
+- 导入顺序：内置 → 第三方 → 全局 hooks/store/utils → 本地
+- 使用 `@/` 别名，禁止多层 `../../`
+- 禁止 `console.log` 提交（调试用 warn，上线前删除）
+
+## Pinia & Hooks
+
+- store 按业务分模块，setup 写法，异步放 action
+- 页面临时状态不进 Pinia
+- 通用逻辑 → `@/hooks`；页面独有 → `views/xxx/hooks/useXxx.ts`
+- hook 以 `use` 开头，不操作 DOM
+
+## 样式
+
+- BEM：`block__element--modifier`
+- 颜色/间距用全局 SCSS 变量，禁止写死色值
+- 页面样式独立 `.scss` 文件
+
+## 接入现有项目
+
+改 `dataExchange/taskManagement` 等模块时，**先读现有 `edit.vue`、`dataChange.ts` 写法再动手**，保持与现网一致。

@@ -1,0 +1,73 @@
+---
+description: 知识沉淀与 spec 流规则（数据交换中心）
+alwaysApply: true
+---
+
+# 知识沉淀规则（dataexchange_portal_agent）
+
+本仓是数据交换中心的**知识中转站**：业务代码在 `data-exchange/`（后端）与 `udp-portal/`（前端），本仓只放知识。
+
+## 接手任何任务前
+
+1. 先读 `AGENTS.md`（环境与规矩）
+2. 涉及具体功能：读 `specs/INDEX.md` 定位相关迭代卡与三层材料（按【功能名】），读完再动代码
+3. 涉及前后端联动：必读 `docs/API-CONTRACT.md`（接口契约的唯一真相源）
+
+## 开发模式（agent 开发的迭代）
+
+- 无 spec 不开发：先在 `specs/` 三层备好材料（**评审一页纸即需求**，不单独收原始需求件），经用户批准后才写实现代码
+- **三角色串行**（显式 `@designer`/`@builder`/`@reviewer` 激活，详见各角色 mdc）：designer 出方案、builder 写代码+测试、reviewer 出建议清单；角色间靠交接物（方案/diff/建议清单）切断上下文污染，最终决策权在用户
+- **修复刹车**：同一 P0 问题经 builder 两轮修复仍未通过 → 停止打回循环，升级用户会诊。两轮不收敛大概率是方案级问题：归 designer 从对应阶段重做，或由用户决定降级处理/带风险上线（记入迭代卡风险区）
+- **版本绑定**：spec 任一材料（一页纸/技术方案/测试方案）中途变更时，其下游已批准的材料自动作废，须重新过对应关口再继续；生成迭代卡时记录「spec 文件 commit ↔ 业务仓代码 commit」对应关系，保证可追溯
+- 材料组织（扁平分层，不建功能子目录，**spec 是最基础层**）：
+  - `specs/spec/`：`spec-【功能名】.md`（**最基础**，行为契约：功能概述/行为契约/边界约束/非目标；模板见 `specs/_templates/spec.md`）
+  - `specs/需求/`：`评审一页纸-【功能名】.html`（spec 的人话版，给业务看痛点/范围/口径）
+  - `specs/方案/`：`技术方案-【功能名】.html/md`、`上线配置-【功能名】.md`（spec 的实现版，给 builder；接口/表/组件从 spec 派生）
+  - `specs/测试/`：`测试方案-【功能名】.md`（spec 的验证版，每条行为契约 ≥1 用例）、`测试报告-【功能名】.html`；测试脚本等工具件留核心文档侧不入仓
+  - 功能归属靠文件名【功能名】，同功能文件按名称排序自然聚拢
+- 合格标准（缺一条不算备好）：
+  1. **spec**：必须有；行为契约每条可测（当 X 时系统应 Y + 可观察判据）；边界与非目标列全
+  2. **需求**（评审一页纸）：每条需求带验收标准，且是 spec 行为契约的人话呈现
+  3. **方案**（技术方案）：必含「涉及接口」（API-CONTRACT 的 C 编号，新接口标"新增"）与「关键取舍」两节；接口/表/组件从 spec 派生
+  4. **测试**：含可执行验收命令（curl 级）+ UI 走查；每条 spec 行为契约 ≥1 用例；实现完成 = curl 与 P0 UI 门禁均通过（见 builder.mdc）
+- 改动若影响 `docs/API-CONTRACT.md` 描述的接口：业务仓提交代码，**同迭代**在本仓更新契约（retro 生卡时校验）
+- spec 与代码不一致时：以最新批准的 spec 为准，agent 主动报告不一致
+- 交付后：验收结论回填 `specs/retro/` 同编号迭代卡
+
+## 开发看板（agent 自动维护，适配多 agent 并行）
+
+- 数据源：`specs/board/` 目录，每个任务一个文件 `NNN-功能名.json`（含状态 + changelog）；阶段配置在 `specs/board/_stages.json`
+- 可视化：`C:\Users\PICC\.cursor\projects\d\canvases\board.canvas.tsx`（由 `scripts/gen-board-canvas.mjs` 从 board 目录聚合生成）
+- **多 agent 并行规则**：每个 agent 只改自己的 `specs/board/NNN-功能名.json`，不碰别的任务文件——物理隔离，无冲突
+- **记录粒度：每次操作都记，不只记关键步骤**——agent 每执行一次有意义的操作（读文件分析、写代码、跑命令、改方案、测试、修复、评审等），都追加一条 changelog，type 用具体活动（见下），description 说清做了什么、为什么
+- **活动类型（type）取值**（配置在 `specs/board/_activity-types.json`，不要用抽象的"阶段切换"）：
+  - designer：`需求对齐` / `产品稿设计` / `技术方案设计` / `测试方案设计`
+  - builder：`代码开发` / `功能测试`
+  - reviewer：`代码审查`
+  - 通用：`方案变更` / `修复缺陷` / `交付完成`
+- agent 每次操作后更新自己的任务文件并重跑生成脚本（`cd d:\自助编程\实时配置自动化\dataexchange_portal_agent; node scripts/gen-board-canvas.mjs`）
+- 新任务：agent 新建 `specs/board/NNN-功能名.json`（编号与 retro 卡一致）
+- Canvas 并发：多个 agent 同时跑脚本"最后写赢"，但数据源（各任务文件）不冲突，Canvas 随时可重新生成
+
+## 知识中转站（定期执行，用户说"生成迭代卡"或每周五触发）
+
+- 分析 `git log <上次锚点>..HEAD` 的增量提交（前后端两仓库分别处理）
+- 按 `specs/_templates/retro-card.md` 模板逐次生成迭代卡到 `specs/retro/`
+- C 级（改动事实）从 diff 提取；B 级（意图）带置信度；A 级（业务背景）只列待补问题
+- 更新 `specs/INDEX.md`；输出本周知识债务清单
+- 锚点管理：`specs/retro/.anchor.txt` 双仓各记一行（`backend=<hash>` / `frontend=<hash>`），生卡后更新
+
+## 材料入仓规则
+
+- md、轻量手写 HTML（如评审一页纸，KB 级）：可直接入仓
+- 单文件 >200KB 或含 base64 大图的导出件（如飞书导出 HTML）：转 md 入仓，或留 `核心文档/` 并在仓内记路径
+- PDF 等二进制原件：留 `核心文档/`，在仓内相关材料中记路径（如"需求原件：核心文档/SLA功能/需求/xxx.pdf"）
+- 过程稿、中间版本、设计过程件（如前端原型）一律不入仓，由 `核心文档/` 侧归档
+
+## 知识纪律
+
+- diff 只能证明"改了什么"，推不出"为什么"——B 级必须带置信度
+- A 级空白处生成待补问题，不编造
+- 宁可留白，不可污染：错误的业务背景会误导下一个接手者
+- 业务仓分支模型：`develop-new`（前端）/ `dev_20260901_approval`（后端）← `feature/xxx`
+- 提交公司 Gitee 前必读 `.cursor/skills/picc-gitee-commit/SKILL.md`
