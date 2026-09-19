@@ -45,6 +45,7 @@ curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
 | 本地联调文件误提交 | push 前执行联调文档 §4 清理脚本（`核心文档/本地联调/README...`） |
 | MySQL 副库连不上 | 需内网/VPN（`10.57.4.6:6033`），不通则任务列表为空 |
 | 前端端口口径 | 实际 **8080**（vite.config.ts），旧材料写 8081 的以代码为准 |
+| 后端 mvn compile 连不上私服 | 本机 Maven 3.9.9 默认拦截 HTTP 仓库且连不上公司私服。**必须**用本地联调 settings + profile：`mvn compile -Plocal-build -s maven-settings-local-repo.xml`（在 `data-exchange/` 下执行）。`-s` 复用驾驶舱项目本地仓库 `D:\自助编程\驾驶舱新模式\Repository`；`-Plocal-build` 把 hadoop-client 降为 Central 标准版 `3.1.1`（MRS 定制包 `3.1.1-h0.cbu.mrs.313.r10` 本地没有，生产部署仍用私服 MRS 包）。**不要**直接 `mvn compile` |
 
 ## 四、谁懂什么（占位 · 待口述补充）
 
@@ -68,4 +69,4 @@ curl "http://localhost:8088/data-exchange/portal/queue-status/snapshot?mode=now"
 | 环境怎么搭 | `docs/DEV-ENVIRONMENT.md` |
 | 规范执行版 | `.cursor/rules/*.mdc` + `docs/STANDARDS.md` |
 | 某次迭代改了什么 | `specs/INDEX.md` → `specs/retro/` |
-| 新功能开发流程 | `specs/` 三层（需求/方案/测试）+ `.cursor/rules/spec-flow.mdc` + 三角色 mdc（designer/builder/reviewer） |
+| 新功能开发流程 | `specs/` 三层 + designer **三阶段停等**（理解确认 → 一页纸+交互稿 → 技术方案）+ builder / reviewer |
