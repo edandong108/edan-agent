@@ -1,0 +1,16 @@
+{
+  "id": "002",
+  "name": "跨中心同步",
+  "stage": "builder",
+  "role": "builder",
+  "progress": 70,
+  "updatedAt": "2026-09-19",
+  "keyChanges": [
+    "09-18 技术方案过关",
+    "09-18 方案调整：接口 3→2（合并 query+detail）"
+  ],
+  "changelog": [
+    { "time": "2026-09-19T14:30:00+08:00", "type": "design_change", "description": "方案调整：接口 3→2（合并 query+detail）", "actor": "designer" },
+    { "time": "2026-09-18T16:00:00+08:00", "type": "stage_change", "description": "阶段2→阶段3（技术方案过关）", "actor": "designer" }
+  ]
+}

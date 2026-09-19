@@ -1,0 +1,15 @@
+{
+  "id": "003",
+  "name": "源表台账批量新建",
+  "stage": "designer",
+  "role": "designer",
+  "progress": 30,
+  "updatedAt": "2026-09-19",
+  "keyChanges": [
+    "09-19 阶段1 需求对齐中",
+    "09-19 UI 草稿评审中"
+  ],
+  "changelog": [
+    { "time": "2026-09-19T15:06:00+08:00", "type": "stage_change", "description": "新建任务，进入 designer 阶段1 需求对齐", "actor": "designer" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "001",
+  "name": "任务运维SLA",
+  "stage": "done",
+  "role": "reviewer",
+  "progress": 100,
+  "updatedAt": "2026-09-10",
+  "keyChanges": [
+    "09-10 新增 queue-status/snapshot、queue-analysis/analyze 两端点",
+    "09-10 双 Tab 壳页决策（DECISIONS D3）",
+    "09-11 19/19 API 验收通过"
+  ],
+  "changelog": [
+    { "time": "2026-09-10T13:08:00+08:00", "type": "stage_change", "description": "交付完成，19/19 API 验收通过", "actor": "builder" }
+  ]
+}
