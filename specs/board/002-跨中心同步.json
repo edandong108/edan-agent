@@ -7,7 +7,7 @@
   "updatedAt": "2026-09-19",
   "keyChanges": [
     "09-19 builder 开发中（70%），接口 3→2 调整后重联调",
-    "09-18 测试方案过关，批淮开发，进入 builder",
+    "09-18 测试方案过关，批准开发，进入 builder",
     "09-18 技术方案过关（含接口契约对齐 API-CONTRACT）",
     "09-17 评审一页纸 + HTML 交互稿过关",
     "09-16 需求对齐完成，进入产品稿"
@@ -15,31 +15,31 @@
   "changelog": [
     {
       "time": "2026-09-19T14:30:00+08:00",
-      "type": "design_change",
+      "type": "方案变更",
       "description": "技术方案调整：原计划拆成 3 个接口（列表查询、详情查询、导出），现合并为 2 个——列表+详情合一为 query 接口（按 id 是否传区分两种模式），导出独立保留。builder 开发中发现前端调用链路冗余，与 designer 商议后调整。目的是减少前端调用次数和后端重复代码",
       "actor": "designer"
     },
     {
       "time": "2026-09-18T17:30:00+08:00",
-      "type": "stage_change",
+      "type": "测试方案设计",
       "description": "designer 阶段4 测试方案过关（调 test_creator skill 生成，含正向/逆向/边界/权限/数据一致性五类 + UI 用例），用户批准开发，正式交给 builder。designer 退出，进入 builder 阶段",
       "actor": "designer"
     },
     {
       "time": "2026-09-18T16:00:00+08:00",
-      "type": "stage_change",
+      "type": "技术方案设计",
       "description": "designer 阶段3 技术方案过关：技术方案含「涉及接口」（对齐 API-CONTRACT 的 C 编号）与「关键取舍」两节，评审通过后进入阶段4 写测试方案",
       "actor": "designer"
     },
     {
       "time": "2026-09-17T15:00:00+08:00",
-      "type": "stage_change",
+      "type": "产品稿设计",
       "description": "designer 阶段2 产品稿过关：评审一页纸（含痛点/范围/验收口径）+ 纯前端 HTML 交互稿通过用户确认，进入阶段3 写技术方案",
       "actor": "designer"
     },
     {
       "time": "2026-09-16T11:00:00+08:00",
-      "type": "stage_change",
+      "type": "需求对齐",
       "description": "designer 阶段1 需求对齐完成：对齐业务理解、评审决策点（同步粒度/冲突策略/失败回滚）、疑惑点，用户确认写一页纸，进入阶段2",
       "actor": "designer"
     }

@@ -12,7 +12,7 @@
   "changelog": [
     {
       "time": "2026-09-19T15:06:00+08:00",
-      "type": "stage_change",
+      "type": "需求对齐",
       "description": "新建任务，进入 designer 阶段1：先对齐业务理解与决策点（批量新建的粒度、校验规则、失败回滚策略），尚未动手写一页纸",
       "actor": "designer"
     }

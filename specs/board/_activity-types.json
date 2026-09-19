@@ -1,0 +1,12 @@
+[
+  { "key": "需求对齐", "tone": "info" },
+  { "key": "产品稿设计", "tone": "info" },
+  { "key": "技术方案设计", "tone": "info" },
+  { "key": "测试方案设计", "tone": "info" },
+  { "key": "代码开发", "tone": "info" },
+  { "key": "功能测试", "tone": "info" },
+  { "key": "方案变更", "tone": "warning" },
+  { "key": "代码审查", "tone": "info" },
+  { "key": "修复缺陷", "tone": "success" },
+  { "key": "交付完成", "tone": "success" }
+]

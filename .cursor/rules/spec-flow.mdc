@@ -39,15 +39,14 @@ alwaysApply: true
 - 数据源：`specs/board/` 目录，每个任务一个文件 `NNN-功能名.json`（含状态 + changelog）；阶段配置在 `specs/board/_stages.json`
 - 可视化：`C:\Users\PICC\.cursor\projects\d\canvases\board.canvas.tsx`（由 `scripts/gen-board-canvas.mjs` 从 board 目录聚合生成）
 - **多 agent 并行规则**：每个 agent 只改自己的 `specs/board/NNN-功能名.json`，不碰别的任务文件——物理隔离，无冲突
-- agent 在以下时机更新自己的任务文件并重跑生成脚本（`cd d:\自助编程\实时配置自动化\dataexchange_portal_agent; node scripts/gen-board-canvas.mjs`）：
-  - designer 阶段过关（stage_change）
-  - designer 方案调整（design_change）
-  - builder 阶段切换（stage_change）
-  - reviewer 出建议（stage_change）
-  - P0/P1 修复完成（fix_done）
-  - 交付完成（done）
+- **记录粒度：每次操作都记，不只记关键步骤**——agent 每执行一次有意义的操作（读文件分析、写代码、跑命令、改方案、测试、修复、评审等），都追加一条 changelog，type 用具体活动（见下），description 说清做了什么、为什么
+- **活动类型（type）取值**（配置在 `specs/board/_activity-types.json`，不要用抽象的"阶段切换"）：
+  - designer：`需求对齐` / `产品稿设计` / `技术方案设计` / `测试方案设计`
+  - builder：`代码开发` / `功能测试`
+  - reviewer：`代码审查`
+  - 通用：`方案变更` / `修复缺陷` / `交付完成`
+- agent 每次操作后更新自己的任务文件并重跑生成脚本（`cd d:\自助编程\实时配置自动化\dataexchange_portal_agent; node scripts/gen-board-canvas.mjs`）
 - 新任务：agent 新建 `specs/board/NNN-功能名.json`（编号与 retro 卡一致）
-- 变更日志只记：阶段切换 + 方案调整（简洁，不记每次会话）
 - Canvas 并发：多个 agent 同时跑脚本"最后写赢"，但数据源（各任务文件）不冲突，Canvas 随时可重新生成
 
 ## 知识中转站（定期执行，用户说"生成迭代卡"或每周五触发）

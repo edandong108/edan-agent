@@ -13,19 +13,19 @@
   "changelog": [
     {
       "time": "2026-09-10T13:08:00+08:00",
-      "type": "stage_change",
+      "type": "交付完成",
       "description": "全部 19 条 curl 验收命令执行通过（含队列状态查询、快照、分析 3 组接口），SLA 运维功能正式交付完成",
       "actor": "builder"
     },
     {
       "time": "2026-09-10T10:30:00+08:00",
-      "type": "design_change",
+      "type": "方案变更",
       "description": "前端页面结构决策：把队列状态和队列分析合并为双 Tab 壳页（DECISIONS D3），避免两个独立菜单项造成用户来回跳转",
       "actor": "designer"
     },
     {
       "time": "2026-09-09T16:00:00+08:00",
-      "type": "stage_change",
+      "type": "测试方案设计",
       "description": "技术方案与测试方案评审过关，进入 builder 开发阶段",
       "actor": "designer"
     }
