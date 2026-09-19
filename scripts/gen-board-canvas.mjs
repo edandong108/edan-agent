@@ -45,22 +45,6 @@ function activityTone(type: string): any {
   return ACTIVITY_TYPES.find((x: any) => x.key === type)?.tone ?? "neutral";
 }
 
-function StatTile({ value, label, tone, color }: { value: any; label: string; tone?: any; color?: any }) {
-  return (
-    <Card>
-      <CardBody>
-        <Stack gap={6}>
-          <Row align="center" gap={8}>
-            {color && <Swatch color={color} />}
-            <Text size="small" tone="tertiary" weight="semibold">{label}</Text>
-          </Row>
-          <Stat value={value} label="" tone={tone} />
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-}
-
 function TaskCard({ task, selected, onSelect }: { task: any; selected: boolean; onSelect: (id: string) => void }) {
   const theme = useHostTheme();
   const cardStyle = selected ? { borderColor: theme.accent.primary, borderWidth: 2 } : undefined;
@@ -143,13 +127,13 @@ export default function BoardCanvas() {
         <Text tone="tertiary" size="small">数据交换中心 · 多 agent 并行开发进度 · 最后更新 {LAST_UPDATE}</Text>
       </Stack>
 
-      <Grid columns={5} gap={12}>
-        <StatTile value={counts.total} label="总任务" />
-        <StatTile value={counts.designer} label="设计中" tone="info" color="blue" />
-        <StatTile value={counts.builder} label="开发中" tone="warning" color="yellow" />
-        <StatTile value={counts.reviewer} label="审查中" tone="info" color="purple" />
-        <StatTile value={counts.done} label="已完成" tone="success" color="green" />
-      </Grid>
+      <Row gap={32} align="center">
+        <Stat value={counts.total} label="总任务" />
+        <Stat value={counts.designer} label="设计中" tone="info" />
+        <Stat value={counts.builder} label="开发中" tone="warning" />
+        <Stat value={counts.reviewer} label="审查中" tone="info" />
+        <Stat value={counts.done} label="已完成" tone="success" />
+      </Row>
 
       <Divider />
 
