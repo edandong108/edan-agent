@@ -127,14 +127,6 @@ export default function BoardCanvas() {
         <Text tone="tertiary" size="small">数据交换中心 · 多 agent 并行开发进度 · 最后更新 {LAST_UPDATE}</Text>
       </Stack>
 
-      <Row gap={32} align="center">
-        <Stat value={counts.total} label="总任务" />
-        <Stat value={counts.designer} label="设计中" tone="info" />
-        <Stat value={counts.builder} label="开发中" tone="warning" />
-        <Stat value={counts.reviewer} label="审查中" tone="info" />
-        <Stat value={counts.done} label="已完成" tone="success" />
-      </Row>
-
       <Divider />
 
       <Stack gap={12}>
