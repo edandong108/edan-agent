@@ -1,0 +1,77 @@
+{
+  "stages": [
+    { "key": "designer", "label": "设计", "tone": "info" },
+    { "key": "builder", "label": "开发", "tone": "progress" },
+    { "key": "reviewer", "label": "审查", "tone": "warning" },
+    { "key": "done", "label": "完成", "tone": "success" }
+  ],
+  "tasks": [
+    {
+      "id": "001",
+      "name": "任务运维SLA",
+      "stage": "done",
+      "role": "reviewer",
+      "progress": 100,
+      "updatedAt": "2026-09-10",
+      "keyChanges": [
+        "09-10 新增 queue-status/snapshot、queue-analysis/analyze 两端点",
+        "09-10 双 Tab 壳页决策（DECISIONS D3）",
+        "09-11 19/19 API 验收通过"
+      ]
+    },
+    {
+      "id": "002",
+      "name": "跨中心同步",
+      "stage": "builder",
+      "role": "builder",
+      "progress": 70,
+      "updatedAt": "2026-09-19",
+      "keyChanges": [
+        "09-18 技术方案过关",
+        "09-18 方案调整：接口 3→2（合并 query+detail）"
+      ]
+    },
+    {
+      "id": "003",
+      "name": "源表台账批量新建",
+      "stage": "designer",
+      "role": "designer",
+      "progress": 30,
+      "updatedAt": "2026-09-19",
+      "keyChanges": [
+        "09-19 阶段1 需求对齐中",
+        "09-19 UI 草稿评审中"
+      ]
+    }
+  ],
+  "changelog": [
+    {
+      "time": "2026-09-19T15:06:00+08:00",
+      "taskId": "003",
+      "type": "stage_change",
+      "description": "新建任务，进入 designer 阶段1 需求对齐",
+      "actor": "designer"
+    },
+    {
+      "time": "2026-09-19T14:30:00+08:00",
+      "taskId": "002",
+      "type": "design_change",
+      "description": "方案调整：接口 3→2（合并 query+detail）",
+      "actor": "designer"
+    },
+    {
+      "time": "2026-09-18T16:00:00+08:00",
+      "taskId": "002",
+      "type": "stage_change",
+      "description": "阶段2→阶段3（技术方案过关）",
+      "actor": "designer"
+    },
+    {
+      "time": "2026-09-10T13:08:00+08:00",
+      "taskId": "001",
+      "type": "stage_change",
+      "description": "交付完成，19/19 API 验收通过",
+      "actor": "builder"
+    }
+  ]
+}

@@ -17,8 +17,8 @@ alwaysApply: true
 
 - 无 spec 不开发：先在 `specs/` 三层备好材料（**评审一页纸即需求**，不单独收原始需求件），经用户批准后才写实现代码
 - **三角色串行**（显式 `@designer`/`@builder`/`@reviewer` 激活，详见各角色 mdc）：
-  - designer：产评审一页纸 + 技术方案（禁写业务代码）
-  - builder：按方案写代码 + 测试，验收命令全通过（禁改方案）
+  - designer：**分阶段停等**（详见 designer.mdc）——先对齐理解与疑惑点；再评审一页纸+纯 HTML 交互稿；用户确认后再写技术方案。禁写业务代码，禁止一步到位
+  - builder：按方案写代码 + 测试，curl 与 P0 UI 门禁均通过（细则见 builder.mdc；禁改方案）
   - reviewer：出分级建议清单（禁改代码、禁提交）
   - 角色间靠交接物（方案/diff/建议清单）切断上下文污染，最终决策权在用户
 - 材料组织（扁平三层，不建功能子目录）：
@@ -29,10 +29,23 @@ alwaysApply: true
 - 合格标准（缺一条不算备好）：
   1. **需求**（评审一页纸）：每条需求带验收标准（当 X 时系统应 Y + 可观察判据）
   2. **方案**（技术方案）：必含「涉及接口」（API-CONTRACT 的 C 编号，新接口标"新增"）与「关键取舍」（为什么这么选，是 DECISIONS.md 的来源）两节
-  3. **测试**：含可执行验收命令（curl 级）；实现完成 = 全部验收命令通过，而非"代码写完了"
+  3. **测试**：含可执行验收命令（curl 级）+ UI 走查；实现完成 = curl 与 P0 UI 门禁均通过（见 builder.mdc），而非「代码写完了」或「读代码算走查」
 - 改动若影响 `docs/API-CONTRACT.md` 描述的接口：业务仓提交代码，**同迭代**在本仓更新契约（retro 生卡时校验）
 - spec 与代码不一致时：以最新批准的 spec 为准，agent 主动报告不一致
 - 交付后：验收结论回填 `specs/retro/` 同编号迭代卡
+
+## 开发看板（agent 自动维护）
+
+- 数据源：`specs/board.json`（唯一源，git 持久化）
+- 可视化：`C:\Users\PICC\.cursor\projects\d\canvases\board.canvas.tsx`（由 `scripts/gen-board-canvas.ps1` 从 board.json 生成，inline 数据）
+- agent 在以下时机更新 board.json 并重跑生成脚本：
+  - designer 阶段过关（stage_change）
+  - designer 方案调整（design_change）
+  - builder 阶段切换（stage_change）
+  - reviewer 出建议（stage_change）
+  - P0/P1 修复完成（fix_done）
+  - 交付完成（done）
+- 变更日志只记：阶段切换 + 方案调整（简洁，不记每次会话）
 
 ## 知识中转站（定期执行，用户说"生成迭代卡"或每周五触发）
 
