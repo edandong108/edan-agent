@@ -10,7 +10,23 @@
     "09-18 方案调整：接口 3→2（合并 query+detail）"
   ],
   "changelog": [
-    { "time": "2026-09-19T14:30:00+08:00", "type": "design_change", "description": "方案调整：接口 3→2（合并 query+detail）", "actor": "designer" },
-    { "time": "2026-09-18T16:00:00+08:00", "type": "stage_change", "description": "阶段2→阶段3（技术方案过关）", "actor": "designer" }
+    {
+      "time": "2026-09-19T14:30:00+08:00",
+      "type": "design_change",
+      "description": "技术方案调整：原计划拆成 3 个接口（列表查询、详情查询、导出），现合并为 2 个——列表+详情合一为 query 接口（按 id 是否传区分两种模式），导出独立保留。目的是减少前端调用次数和后端重复代码",
+      "actor": "designer"
+    },
+    {
+      "time": "2026-09-18T16:00:00+08:00",
+      "type": "stage_change",
+      "description": "评审一页纸和纯 HTML 交互稿通过后，技术方案评审过关，进入测试方案设计阶段",
+      "actor": "designer"
+    },
+    {
+      "time": "2026-09-18T10:00:00+08:00",
+      "type": "stage_change",
+      "description": "需求对齐完成，用户确认写一页纸，进入 designer 阶段2（产品稿）",
+      "actor": "designer"
+    }
   ]
 }
