@@ -129,14 +129,11 @@ export default function BoardCanvas() {
 
       <Divider />
 
-      <Stack gap={12}>
-        <H2>任务看板</H2>
-        <Grid columns={4} gap={16}>
+      <Grid columns={4} gap={16}>
           {STAGES.map((s: any) => (
             <StageColumn key={s.key} stage={s} selectedId={selectedId} onSelect={setSelectedId} />
           ))}
         </Grid>
-      </Stack>
 
       <Divider />
 
